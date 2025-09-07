@@ -197,8 +197,30 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
 
     @staticmethod
     def _get_prefs():
-        addon = bpy.context.preferences.addons.get(__package__)
-        return addon.preferences if addon else None
+        try:
+            addons = bpy.context.preferences.addons
+        except Exception:
+            return None
+
+        pkg = __package__ or ""
+        if pkg:
+            # direct package match
+            if pkg in addons:
+                addon = addons.get(pkg)
+                return addon.preferences if addon else None
+            # try top-level package
+            root = pkg.split('.', 1)[0]
+            if root in addons:
+                addon = addons.get(root)
+                return addon.preferences if addon else None
+
+        # fallback: find any addon key that contains 'uv_loop_tools'
+        for key in addons.keys():
+            if 'uv_loop_tools' in key:
+                addon = addons.get(key)
+                return addon.preferences if addon else None
+
+        return None
 
     def _backend_is_opengl(self):
         be = bpy.context.preferences.system.gpu_backend
