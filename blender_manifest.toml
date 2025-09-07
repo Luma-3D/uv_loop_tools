@@ -1,0 +1,11 @@
+schema_version = "1.0.0"
+
+id = "uv_loop_tools"
+version = "1.0.0"
+name = "UV Loop Tools"
+tagline = "Redistribute UV edge loops with noise tolerance"
+maintainer = "Luma"
+type = "add-on"
+blender_version_min = "4.5.0"
+license = ["SPDX:MIT"]
+category = "UV"
