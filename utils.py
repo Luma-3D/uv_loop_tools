@@ -3,39 +3,7 @@ import bpy
 
 from mathutils import Vector
 import math
-
-
-def _is_japanese_language():
-    """Return True if Blender language/locale appears to be Japanese.
-
-    We try a couple of heuristics because API enums differ across versions.
-    """
-    try:
-        lang = getattr(bpy.context.preferences.view, 'language', '')
-        if isinstance(lang, str) and ('ja' in lang.lower() or 'japan' in lang.lower()):
-            return True
-    except Exception:
-        pass
-    try:
-        # bpy.app.translations.locale is commonly like 'ja_JP'
-        loc = getattr(bpy.app, 'translations', None)
-        if loc is not None:
-            locale = getattr(bpy.app.translations, 'locale', '')
-            if isinstance(locale, str) and locale.lower().startswith('ja'):
-                return True
-    except Exception:
-        pass
-    return False
-
-
-def tr(en: str, ja: str = None) -> str:
-    """Return localized string: English by default, Japanese if Blender is set to Japanese and a Japanese string is provided."""
-    if ja is None:
-        return en
-    try:
-        return ja if _is_japanese_language() else en
-    except Exception:
-        return en
+from .translation import tr
 
 def _update_iter_from_f9_choice(self, context):
     """F9の見せかけプロパティを実プロパティへ反映"""
