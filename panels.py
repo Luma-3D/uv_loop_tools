@@ -55,7 +55,7 @@ class UV_PT_spline_panel(bpy.types.Panel):
                 box = col.box()
                 # window manager prop is created in register(); guard access
                 if hasattr(bpy.context.window_manager, "uv_spline_auto_ctrl_count"):
-                    box.prop(bpy.context.window_manager, "uv_spline_auto_ctrl_count", text="制御点数")
+                    box.prop(bpy.context.window_manager, "uv_spline_auto_ctrl_count", text=utils.tr("Control Points", "制御点数"))
             except Exception:
                 pass
 
