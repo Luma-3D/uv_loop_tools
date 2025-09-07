@@ -71,9 +71,9 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
     bl_label = 'UV：スプライン調整（モーダル）'
     bl_options = {'REGISTER', 'UNDO', 'BLOCKING'}
 
-    auto_ctrl_count = bpy.props.IntProperty(default=4, min=2, max=30)
+    auto_ctrl_count: bpy.props.IntProperty(default=4, min=2, max=30)
 
-    weld_tolerance = bpy.props.FloatProperty(
+    weld_tolerance: bpy.props.FloatProperty(
         name="同一点判定の丸め",
         description="この精度でUV座標を丸めて同一点として扱います",
         min=1e-8, max=1e-2, default=1e-6, options={'HIDDEN'}
