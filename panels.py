@@ -4,6 +4,7 @@ import bpy
 from . import properties, utils
 from .operators import spline as operators_spline, equalize as operators_equalize, match3d as operators_3d
 
+
 def _get_addon_prefs():
     """Try to find the addon preferences object for this package.
     We look for any installed addon whose module name contains 'uv_loop_tools'
@@ -30,8 +31,9 @@ def _get_addon_prefs():
     # last resort: return None
     return None
 
+
 class UV_PT_spline_panel(bpy.types.Panel):
-    bl_label = 'スプライン'
+    bl_label = 'Spline'
     bl_category = 'ULT'
     bl_order = 10
     bl_space_type = "IMAGE_EDITOR"
@@ -44,9 +46,9 @@ class UV_PT_spline_panel(bpy.types.Panel):
         op_row = col.row(align=True)
         op_row.enabled = not bool(use_uv_sync)
         op_row.operator(operators_spline.UV_OT_spline_adjust_modal.bl_idname,
-                        text='カーブで調整（モーダル）', icon='CURVE_BEZCURVE')
+                        text='Adjust with Curve (Modal)', icon='CURVE_BEZCURVE')
         if use_uv_sync:
-            col.label(text="UV選択同期がオンのため実行できません。", icon='INFO')
+            col.label(text="Cannot run while UV sync selection is on.", icon='INFO')
 
         prefs = _get_addon_prefs()
         if prefs:
@@ -55,12 +57,13 @@ class UV_PT_spline_panel(bpy.types.Panel):
                 box = col.box()
                 # window manager prop is created in register(); guard access
                 if hasattr(bpy.context.window_manager, "uv_spline_auto_ctrl_count"):
-                    box.prop(bpy.context.window_manager, "uv_spline_auto_ctrl_count", text="制御点数")
+                    box.prop(bpy.context.window_manager, "uv_spline_auto_ctrl_count", text="Control Points")
             except Exception:
                 pass
 
+
 class UV_PT_loop_equalize_auto(bpy.types.Panel):
-    bl_label = 'UVループの頂点を等間隔化'
+    bl_label = 'UV Loop Equalize'
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'ULT'
@@ -86,49 +89,63 @@ class UV_PT_loop_equalize_auto(bpy.types.Panel):
                 pass
 
         if not hasattr(wm, 'uvlseq_settings'):
-            layout.label(text='UVループ均等化を初期化しています…')
+            layout.label(text='Initializing UV Loop Equalize…')
             return
 
         sel = wm.uvlseq_settings.iter_choice
 
         def _apply_iter(op):
-            if sel == 'AUTO':
-                op.iter_mode = 'AUTO'
-            else:
-                op.iter_mode = 'COUNT'
-                op.iter_count = int(sel)
+            try:
+                if sel == 'AUTO':
+                    op.iter_mode = 'AUTO'
+                else:
+                    op.iter_mode = 'COUNT'
+                    op.iter_count = int(sel)
+            except Exception:
+                # Operator may not expose iter_mode/iter_count properties; ignore in that case
+                pass
 
         col = layout.column(align=True)
         col.enabled = not sync_on
 
-        op_auto = col.operator("uv.loop_equalize", text='自動判定して等間隔', icon="ALIGN_CENTER")
-        op_auto.closed_loop = 'AUTO'
-        op_auto.repeat_closed_only = wm.uvlseq_settings.repeat_closed_only
+        op_auto = col.operator("uv.loop_equalize", text='Auto Equalize', icon="ALIGN_CENTER")
+        try:
+            op_auto.closed_loop = 'AUTO'
+            op_auto.repeat_closed_only = wm.uvlseq_settings.repeat_closed_only
+        except Exception:
+            pass
         _apply_iter(op_auto)
 
         row = col.row(align=True)
-        op_open = row.operator("uv.loop_equalize", text='開ループ', icon="CURVE_PATH")
-        op_open.closed_loop = 'OPEN'
-        op_open.repeat_closed_only = wm.uvlseq_settings.repeat_closed_only
+        op_open = row.operator("uv.loop_equalize", text='Open Loop', icon="CURVE_PATH")
+        try:
+            op_open.closed_loop = 'OPEN'
+            op_open.repeat_closed_only = wm.uvlseq_settings.repeat_closed_only
+        except Exception:
+            pass
         _apply_iter(op_open)
 
-        op_close = row.operator("uv.loop_equalize", text='閉ループ', icon="MOD_CURVE")
-        op_close.closed_loop = 'CLOSED'
-        op_close.repeat_closed_only = wm.uvlseq_settings.repeat_closed_only
+        op_close = row.operator("uv.loop_equalize", text='Closed Loop', icon="MOD_CURVE")
+        try:
+            op_close.closed_loop = 'CLOSED'
+            op_close.repeat_closed_only = wm.uvlseq_settings.repeat_closed_only
+        except Exception:
+            pass
         _apply_iter(op_close)
 
         box_iter = col.box()
         row_head = box_iter.row(align=True)
-        row_head.label(text="繰り返し")
-        row_head.prop(wm.uvlseq_settings, "repeat_closed_only", text="閉ループのみ")
+        row_head.label(text="Iterations")
+        row_head.prop(wm.uvlseq_settings, "repeat_closed_only", text="Closed loops only")
         row_iter = box_iter.row(align=True)
         row_iter.prop(wm.uvlseq_settings, "iter_choice", expand=True)
 
         if sync_on:
-            layout.label(text="UV選択同期がONのため実行できません。", icon='INFO')
+            layout.label(text="Cannot run while UV sync selection is on.", icon='INFO')
+
 
 class UV_PT_loop_equalize_straighten(bpy.types.Panel):
-    bl_label = 'UVループを直線化して等間隔化'
+    bl_label = 'Straighten and Equalize'
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'ULT'
@@ -149,15 +166,15 @@ class UV_PT_loop_equalize_straighten(bpy.types.Panel):
         col.enabled = not sync_on
 
         col.operator("uv.loop_equalize_straight_open",
-                     text='直線化して等間隔',
+                     text='Straighten and Equalize',
                      icon="IPO_LINEAR")
 
         if sync_on:
-            layout.label(text="UV選択同期がONのため実行できません。", icon='INFO')
+            layout.label(text="Cannot run while UV sync selection is on.", icon='INFO')
 
 
 class UV_PT_loop_match3d_ratio(bpy.types.Panel):
-    bl_label = '3D比率で再配置'
+    bl_label = 'Match 3D Ratio'
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'ULT'
@@ -174,16 +191,28 @@ class UV_PT_loop_match3d_ratio(bpy.types.Panel):
         sync_on = bool(ts) and ts.use_uv_select_sync
         col = layout.column(align=True); col.enabled = not sync_on
         row0 = col.row(align=True)
-        op = row0.operator("uv.loop_match3d_ratio", text='自動判定して3D比率', icon='ALIGN_CENTER'); op.closed_loop='AUTO'
+        op = row0.operator("uv.loop_match3d_ratio", text='Auto Match 3D Ratio', icon='ALIGN_CENTER')
+        try:
+            op.closed_loop = 'AUTO'
+        except Exception:
+            pass
         row1 = col.row(align=True)
-        op = row1.operator("uv.loop_match3d_ratio", text='開ループ', icon='CURVE_PATH'); op.closed_loop='OPEN'
-        op = row1.operator("uv.loop_match3d_ratio", text='閉ループ', icon='MOD_CURVE'); op.closed_loop='CLOSED'
+        op = row1.operator("uv.loop_match3d_ratio", text='Open Loop', icon='CURVE_PATH')
+        try:
+            op.closed_loop = 'OPEN'
+        except Exception:
+            pass
+        op = row1.operator("uv.loop_match3d_ratio", text='Closed Loop', icon='MOD_CURVE')
+        try:
+            op.closed_loop = 'CLOSED'
+        except Exception:
+            pass
         if sync_on:
-            layout.label(text="UV選択同期がONのため実行できません。", icon='INFO')
+            layout.label(text="Cannot run while UV sync selection is on.", icon='INFO')
 
 
 class UV_PT_loop_match3d_ratio_straight(bpy.types.Panel):
-    bl_label = '3D比率で直線化（開のみ）'
+    bl_label = 'Straighten Match 3D Ratio (Open only)'
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'ULT'
@@ -199,9 +228,9 @@ class UV_PT_loop_match3d_ratio_straight(bpy.types.Panel):
         ts = getattr(context,'tool_settings',None)
         sync_on = bool(ts) and ts.use_uv_select_sync
         col = layout.column(align=True); col.enabled = not sync_on
-        col.operator("uv.loop_match3d_ratio_straight_open", text='直線化して3D比率', icon='IPO_LINEAR')
+        col.operator("uv.loop_match3d_ratio_straight_open", text='Straighten and Match 3D Ratio', icon='IPO_LINEAR')
         if sync_on:
-            layout.label(text="UV選択同期がONのため実行できません。", icon='INFO')
+            layout.label(text="Cannot run while UV sync selection is on.", icon='INFO')
 
 
 # --- registration helpers ---

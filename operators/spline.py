@@ -68,14 +68,14 @@ class MultiSplineState:
 
 class UV_OT_spline_adjust_modal(bpy.types.Operator):
     bl_idname = "uv.spline_adjust_modal"
-    bl_label = 'UV：スプライン調整（モーダル）'
+    bl_label = "Adjust with Curve (Modal)"
     bl_options = {'REGISTER', 'UNDO', 'BLOCKING'}
 
-    auto_ctrl_count: bpy.props.IntProperty(default=4, min=2, max=30)
+    auto_ctrl_count = bpy.props.IntProperty(default=4, min=2, max=30)
 
-    weld_tolerance: bpy.props.FloatProperty(
-        name="同一点判定の丸め",
-        description="この精度でUV座標を丸めて同一点として扱います",
+    weld_tolerance = bpy.props.FloatProperty(
+        name="Weld tolerance",
+        description="Round UV coordinates to this precision for welding",
         min=1e-8, max=1e-2, default=1e-6, options={'HIDDEN'}
     )
 
@@ -88,6 +88,16 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
     def _region_to_uv(self, x, y):
         mu, mv = self.v2d.region_to_view(x, y)
         return Vector((mu, mv))
+
+    def _pref_int(self, prefs, name, default):
+        """Safely get an integer preference value; fallback to default if value is deferred or invalid."""
+        try:
+            if prefs is None:
+                return default
+            val = getattr(prefs, name, default)
+            return int(val)
+        except Exception:
+            return default
 
     def _snapshot_ctrl(self):
         self._ctrl_backup = [[v.copy() for v in c.ctrl] for c in self.ms.curves]
@@ -117,6 +127,11 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
 
     def _apply_preview_all(self, context):
         bm_cache = {}
+        # normalize weld_tolerance to native float to avoid _PropertyDeferred in closures
+        try:
+            weld_tol = float(getattr(self, 'weld_tolerance', 1e-6))
+        except Exception:
+            weld_tol = 1e-6
         for c in self.ms.curves:
             obj = getattr(c, 'obj', context.object)
             if obj not in bm_cache:
@@ -174,7 +189,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                 try:
                     loop = bm.faces[fidx].loops[lidx]
                     new_uv = point_at_fraction(frac)
-                    key_func = lambda v: utils._uv_key(v, tol=self.weld_tolerance)
+                    key_func = lambda v, _tol=weld_tol: utils._uv_key(v, tol=_tol)
                     welded = utils.gather_welded_uv_loops(loop, uv_layer, key_func)
                     if not hasattr(self, '_welded_backup') or self._welded_backup is None:
                         self._welded_backup = {}
@@ -381,30 +396,30 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                     else:
                         self._draw_disc(px.x, px.y, point_size*0.9, color_act, shader2d, segments=20)
 
-        try:
-            blf.size(0, 12)
-            hud = (f"[UVスプライン] カーブ: {len(self.ms.curves)} 制御点(各): {self.ms.global_points} "
-                   "(H: 表示切替, Ctrl+ホイール: 現在形状±, Shift+ホイール: 原形状±)")
-            blf.position(0, 14, 10, 0)
-            blf.draw(0, hud)
-        except Exception:
-            pass
+            try:
+                blf.size(0, 12)
+                hud_template = "[UV Spline] Curves: {count_curves} Points(each): {points} (H: toggle display, Ctrl+Wheel: current shape ±, Shift+Wheel: original shape ±)"
+                hud = hud_template.format(count_curves=len(self.ms.curves), points=self.ms.global_points)
+                blf.position(0, 14, 10, 0)
+                blf.draw(0, hud)
+            except Exception:
+                pass
 
     def invoke(self, context, event):
         if getattr(context.scene.tool_settings, "use_uv_select_sync", False):
-            self.report({'WARNING'}, "UV選択同期がONのため実行できません。UVエディタのヘッダーで同期をOFFにしてください。")
+            self.report({'WARNING'}, "Cannot run while UV sync selection is on. Please disable sync in the UV editor header.")
             return {'CANCELLED'}
         if context.area is None or context.area.type != 'IMAGE_EDITOR':
-            self.report({'WARNING'}, "メッシュを編集モードにした状態でUVエディタから実行してください。")
+            self.report({'WARNING'}, "Please run from the UV/Image Editor while editing a mesh.")
             return {'CANCELLED'}
         if not context.object or context.object.type != 'MESH' or context.object.mode != 'EDIT':
-            self.report({'WARNING'}, "アクティブオブジェクトは編集モード中のメッシュである必要があります。")
+            self.report({'WARNING'}, "Active object must be a mesh in Edit Mode.")
             return {'CANCELLED'}
 
         self.area = context.area
         self.region = next((r for r in self.area.regions if r.type == 'WINDOW'), None)
         if not self.region:
-            self.report({'ERROR'}, "Image Editor に WINDOW リージョンが見つかりません。")
+            self.report({'ERROR'}, "No WINDOW region found in Image Editor.")
             return {'CANCELLED'}
         self.v2d = self.region.view2d
 
@@ -921,12 +936,12 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
 
             else:
                 if event.shift:
-                    cidx, pidx = self.ms.find_nearest_control(self.mouse_uv, int(getattr(self._get_prefs(), 'point_pick_threshold_px', 12)), self.v2d, self.region)
+                    cidx, pidx = self.ms.find_nearest_control(self.mouse_uv, self._pref_int(self._get_prefs(), 'point_pick_threshold_px', 12), self.v2d, self.region)
                     if cidx >= 0 and pidx >= 0:
                         self._toggle_select(cidx, pidx)
                         if self.area: self.area.tag_redraw()
                     return {'RUNNING_MODAL'}
-                cidx, pidx = self.ms.find_nearest_control(self.mouse_uv, int(getattr(self._get_prefs(), 'point_pick_threshold_px', 12)), self.v2d, self.region)
+                cidx, pidx = self.ms.find_nearest_control(self.mouse_uv, self._pref_int(self._get_prefs(), 'point_pick_threshold_px', 12), self.v2d, self.region)
                 if cidx >= 0 and pidx >= 0:
                     # If clicked control is already in the current selection, keep the selection
                     # (so dragging moves all selected points). Otherwise select single.
@@ -977,7 +992,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
         elif event.type == 'G' and event.value == 'PRESS':
             any_sel = any(bool(c.sel) for c in self.ms.curves)
             if not any_sel:
-                cidx,pidx = self.ms.find_nearest_control(self.mouse_uv, int(getattr(self._get_prefs(), 'point_pick_threshold_px', 24)), self.v2d, self.region)
+                cidx,pidx = self.ms.find_nearest_control(self.mouse_uv, self._pref_int(self._get_prefs(), 'point_pick_threshold_px', 24), self.v2d, self.region)
                 if cidx >= 0 and pidx >= 0:
                     self._set_active_single(cidx, pidx)
             if any(bool(c.sel) for c in self.ms.curves):

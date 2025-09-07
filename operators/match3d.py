@@ -8,19 +8,18 @@ from .. import utils, properties
 
 class UV_OT_loop_match3d_ratio(bpy.types.Operator):
     bl_idname = "uv.loop_match3d_ratio"
-    bl_label = "3D比率でUVを再配分（形状保持）"
-    bl_description = "選択したUVエッジループについて、3D空間でのエッジ間隔の比率に合わせて、UV上の形状を保ったまま頂点間隔を再配分します"
+    bl_label = "Match 3D Ratio (Preserve Shape)"
+    bl_description = "Redistribute selected UV edge loops so spacing matches 3D edge ratios while preserving shape"
     bl_options = {'REGISTER', 'UNDO'}
-
-    closed_loop: bpy.props.EnumProperty(
-        name="ループの種類",
-        description="自動判定がうまくいかない場合に指定します",
-        items=[('AUTO','自動判定','端点数から自動判定'),('OPEN','開ループ','開として処理'),('CLOSED','閉ループ','閉として処理')],
+    closed_loop = bpy.props.EnumProperty(
+        name="Loop Type",
+        description="Specify if auto-detection fails",
+        items=[('AUTO','Auto','Auto detect'),('OPEN','Open','Treat as open loop'),('CLOSED','Closed','Treat as closed loop')],
         default='AUTO'
     )
-    weld_tolerance: bpy.props.FloatProperty(
-        name="同一点判定の丸め",
-        description="この精度でUV座標を丸めて同一点として扱います（溶接・移動判定に使用）",
+    weld_tolerance = bpy.props.FloatProperty(
+        name="Weld tolerance",
+        description="Round UV coordinates to this precision for welding",
         min=1e-8, max=1e-2, default=1e-6, subtype='FACTOR'
     )
 
@@ -35,15 +34,21 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         box0 = layout.box()
-        box0.label(text="ループ種別 / オプション")
+        box0.label(text="Loop Type / Options")
         row = box0.row(align=True)
         row.prop(self, "closed_loop", expand=True)
         box0.prop(self, "weld_tolerance")
 
     def execute(self, context):
+        # normalize props to avoid _PropertyDeferred proxies
+        try:
+            weld_tolerance = float(self.weld_tolerance)
+        except Exception:
+            weld_tolerance = 1e-6
+
         ts = getattr(context, "tool_settings", None)
         if ts and getattr(ts, "use_uv_select_sync", False):
-            self.report({'WARNING'}, "UV選択同期がONのため実行できません。UVエディタのヘッダーで同期をOFFにしてください。")
+            self.report({'WARNING'}, "Cannot run while UV sync selection is on. Please disable sync in the UV editor header.")
             return {'CANCELLED'}
 
         objs = [o for o in context.selected_editable_objects if o.type == 'MESH' and o.mode == 'EDIT']
@@ -51,7 +56,7 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
             if context.object and context.object.type=='MESH' and context.object.mode=='EDIT':
                 objs = [context.object]
             else:
-                self.report({'WARNING'}, "編集モードにあるメッシュオブジェクトがありません。")
+                self.report({'WARNING'}, "No editable mesh objects in edit mode.")
                 return {'CANCELLED'}
 
         moved_vis_total = 0
@@ -69,12 +74,12 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
                 continue
             uv_layer = bm.loops.layers.uv.verify()
 
-            graph_tol = min(self.weld_tolerance*0.25, 5e-7)
+            graph_tol = min(weld_tolerance*0.25, 5e-7)
             def uv_key_graph(v):
                 s = int(round(1.0/max(graph_tol,1e-12)))
                 return (int(round(v.x*s)), int(round(v.y*s)))
             def uv_key_weld(v):
-                s = int(round(1.0/max(self.weld_tolerance,1e-12)))
+                s = int(round(1.0/max(weld_tolerance,1e-12)))
                 return (int(round(v.x*s)), int(round(v.y*s)))
 
             graph = {}
@@ -101,7 +106,7 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
 
             comps = utils.connected_components_keys(graph)
             if not comps:
-                self.report({'ERROR'}, "内部エラー：連結成分が見つかりません。")
+                self.report({'ERROR'}, "Internal error: no connected components found.")
                 return {'CANCELLED'}
 
             def read_uvs(keys):
@@ -192,7 +197,7 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
                     pts_uv = read_uvs(ordered_keys)
                     pts3   = read_v3(ordered_keys)
                     if pts_uv is None or pts3 is None:
-                        self.report({'ERROR'}, "内部エラー：対応UV/頂点が読み取れませんでした。")
+                        self.report({'ERROR'}, "Internal error: failed to read corresponding UVs/vertices.")
                         return {'CANCELLED'}
 
                     uw = need_unwrap(pts_uv, is_closed)
@@ -263,11 +268,11 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
 
         if processed==0:
             if skipped>0:
-                self.report({'INFO'}, "処理可能なループが見つからないか、3D長ゼロでスキップされました。")
+                self.report({'INFO'}, "No valid loops found or skipped due to zero 3D length.")
             else:
-                self.report({'ERROR'}, "処理可能なエッジループが見つかりませんでした。")
+                self.report({'ERROR'}, "No valid edge loops found.")
             return {'CANCELLED'}
-        msg=f"3D比率（形状保持）: 開 {count_open} / 閉 {count_closed} 移動頂点数 {moved_vis_total}"
+        msg=f"3D Ratio (preserve shape): Open {count_open} / Closed {count_closed} Moved verts {moved_vis_total}"
         if skipped>0: msg+=f" スキップ {skipped}"
         self.report({'INFO'}, msg)
         return {'FINISHED'}
@@ -275,13 +280,13 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
 
 class UV_OT_loop_match3d_ratio_straight_open(bpy.types.Operator):
     bl_idname = "uv.loop_match3d_ratio_straight_open"
-    bl_label = "3D比率で直線化（開ループのみ）"
-    bl_description = "開ループに対し、3Dの間隔比率に合わせて端点直線上に再配置します（閉ループは無処理）"
+    bl_label = "Match 3D Ratio Straighten (Open loops only)"
+    bl_description = "For open loops, redistribute along the endpoint line according to 3D spacing ratios (closed loops unchanged)"
     bl_options = {'REGISTER', 'UNDO'}
 
-    weld_tolerance: bpy.props.FloatProperty(
-        name="同一点判定の丸め",
-        description="この精度でUV座標を丸めて同一点として扱います（溶接・移動判定に使用）",
+    weld_tolerance = bpy.props.FloatProperty(
+        name="Weld tolerance",
+        description="Round UV coordinates to this precision for welding",
         min=1e-8, max=1e-2, default=1e-6, subtype='FACTOR'
     )
 
@@ -296,13 +301,19 @@ class UV_OT_loop_match3d_ratio_straight_open(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         box = layout.box()
-        box.label(text="オプション")
+        box.label(text="Options")
         box.prop(self, "weld_tolerance")
 
     def execute(self, context):
+        # normalize props to avoid _PropertyDeferred proxies
+        try:
+            weld_tolerance = float(self.weld_tolerance)
+        except Exception:
+            weld_tolerance = 1e-6
+
         ts = getattr(context, "tool_settings", None)
         if ts and getattr(ts, "use_uv_select_sync", False):
-            self.report({'WARNING'}, "UV選択同期がONのため実行できません。UVエディタのヘッダーで同期をOFFにしてください。")
+            self.report({'WARNING'}, "Cannot run while UV sync selection is on. Please disable sync in the UV editor header.")
             return {'CANCELLED'}
 
         objs = [o for o in context.selected_editable_objects if o.type == 'MESH' and o.mode == 'EDIT']
@@ -310,7 +321,7 @@ class UV_OT_loop_match3d_ratio_straight_open(bpy.types.Operator):
             if context.object and context.object.type=='MESH' and context.object.mode=='EDIT':
                 objs = [context.object]
             else:
-                self.report({'WARNING'}, "編集モードにあるメッシュオブジェクトがありません。")
+                self.report({'WARNING'}, "No editable mesh objects in edit mode.")
                 return {'CANCELLED'}
 
         moved_vis_total = 0
@@ -328,12 +339,12 @@ class UV_OT_loop_match3d_ratio_straight_open(bpy.types.Operator):
                 continue
             uv_layer = bm.loops.layers.uv.verify()
 
-            graph_tol = min(self.weld_tolerance*0.25, 5e-7)
+            graph_tol = min(weld_tolerance*0.25, 5e-7)
             def uv_key_graph(v):
                 s = int(round(1.0/max(graph_tol,1e-12)))
                 return (int(round(v.x*s)), int(round(v.y*s)))
             def uv_key_weld(v):
-                s = int(round(1.0/max(self.weld_tolerance,1e-12)))
+                s = int(round(1.0/max(weld_tolerance,1e-12)))
                 return (int(round(v.x*s)), int(round(v.y*s)))
 
             graph={}; uv_to_loops={}
@@ -404,7 +415,7 @@ class UV_OT_loop_match3d_ratio_straight_open(bpy.types.Operator):
                     if uv_coords is None:
                         skipped += 1
                         continue
-                    coord_tol = max(self.weld_tolerance * 10.0, 1e-6)
+                    coord_tol = max(weld_tolerance * 10.0, 1e-6)
                     if len(uv_coords) >= 3 and (uv_coords[0] - uv_coords[-1]).length <= coord_tol:
                         is_closed = True
 
@@ -467,11 +478,11 @@ class UV_OT_loop_match3d_ratio_straight_open(bpy.types.Operator):
 
         if processed==0:
             if skipped>0:
-                self.report({'INFO'}, "閉ループのみ、または処理可能な開ループが見つかりませんでした（閉ループは無処理）。")
+                self.report({'INFO'}, "Only closed loops, or no valid open loops were found (closed loops left unchanged).")
             else:
-                self.report({'ERROR'}, "処理可能なエッジループが見つかりませんでした。")
+                self.report({'ERROR'}, "No valid edge loops found.")
             return {'CANCELLED'}
-        msg=f"3D比率・直線化: 開 {count_open} / 閉（無処理）{count_closed} 移動頂点数 {moved_vis_total}"
+        msg=f"3D Ratio Straighten: Open {count_open} / Closed (skipped) {count_closed} Moved verts {moved_vis_total}"
         if skipped>0: msg+=f" スキップ {skipped}"
         self.report({'INFO'}, msg)
         return {'FINISHED'}

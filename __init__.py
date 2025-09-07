@@ -2,7 +2,7 @@
 bl_info = {
     "name": "UV Loop Tools",
     "author": "Luma",
-    "version": (1, 2, 1),
+    "version": (1, 0, 0),
     "blender": (4, 5, 0),
     "location": "Image Editor > N-panel > ULT",
     "description": "UV spline / loop equalize / 3D match tools (modular)",
