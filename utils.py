@@ -3,7 +3,6 @@ import bpy
 
 from mathutils import Vector
 import math
-from .translation import tr
 
 def _update_iter_from_f9_choice(self, context):
     """F9の見せかけプロパティを実プロパティへ反映"""
