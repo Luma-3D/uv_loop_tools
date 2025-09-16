@@ -1,3 +1,4 @@
+# operators/__init__.py
 """
 operators パッケージ初期化。
 サブモジュールは import 時にまとめて読み込むと循環参照の原因となるため、

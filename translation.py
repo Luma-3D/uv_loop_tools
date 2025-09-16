@@ -8,6 +8,7 @@ translation_dict = {
         ("*", "Adjust with Curve (Modal)"): "カーブで調整（モーダル）",
         ("*", "Cannot run while UV sync selection is on."): "UV選択同期がオンのため実行できません。",
         ("*", "Control Points"): "制御点数",
+        ("*", "UV Loop Equalize"): "形状を維持して等間隔",
         ("*", "Initializing UV Loop Equalize…"): "UVループ均等化を初期化しています…",
         ("*", "Auto Equalize"): "自動判定して等間隔",
         ("*", "Open Loop"): "開ループ",
@@ -15,8 +16,10 @@ translation_dict = {
         ("*", "Iterations"): "繰り返し",
         ("*", "Closed loops only"): "閉ループのみ",
         ("*", "Straighten and Equalize"): "直線化して等間隔",
+        ("*", "Match 3D Ratio"): "形状を維持して3D比率",
         ("*", "Auto Match 3D Ratio"): "自動判定して3D比率",
-        ("*", "Straighten and Match 3D Ratio"): "直線化して3D比率",
+        ("*", "Straighten and Match 3D Ratio (Open only)"): "直線化して3D比率(開ループのみ)",
+        ("*", "Straighten and Match 3D Ratio"): "直線化(3D比率)",
 
         # Preferences
         ("*", "Curve"): "カーブ",

@@ -1,3 +1,4 @@
+# properties.py
 import bpy
 from bpy.props import *
 

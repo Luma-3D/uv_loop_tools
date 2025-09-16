@@ -1,4 +1,24 @@
 # __init__.py
+'''
+uv_loop_tools/
+├─ __init__.py
+├─ operators/
+│   ├─ __init__.py
+│   ├─ spline.py
+│   ├─ equalize.py
+│   └─ match3d.py
+├─ panels.py
+├─ preferences.py
+├─ properties.py
+├─ translation.py
+├─ utils.py
+├─ blender_manifest.toml
+├─ icons/
+│   └─ ...
+├─ README.md
+└─ LICENSE
+
+'''
 bl_info = {
     "name": "UV Loop Tools",
     "author": "Luma",
@@ -15,6 +35,7 @@ from . import (
     utils,
     panels,
     preferences,
+    translation,
 )
 
 # operators パッケージ側に移動した各モジュールを旧名でエイリアス
@@ -27,11 +48,13 @@ MODULES = (
     operators,
     panels,
     preferences,
+    translation,
 )
 
 def register():
     """Register: 各サブモジュールの register() を順に呼ぶ（例外はそのまま上げる）"""
     import bpy
+    print("Registering preferences...")
     for mod in MODULES:
         if hasattr(mod, "register"):
             mod.register()

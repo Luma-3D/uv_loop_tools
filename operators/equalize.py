@@ -1,4 +1,5 @@
-"""operators/equalize.py
+# operators/equalize.py
+"""
 Clean equalize operators with safe numeric normalization to avoid _PropertyDeferred arithmetic errors.
 """
 

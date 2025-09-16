@@ -1,9 +1,10 @@
+# panels.py
 import bpy
 
 # import operators via the operators package to avoid circular imports from legacy module names
 from . import properties, utils
-from .operators import spline as operators_spline, equalize as operators_equalize, match3d as operators_3d
-
+from .operators import spline, equalize, match3d
+from bpy.app.translations import pgettext_iface as iface_
 
 def _get_addon_prefs():
     """Try to find the addon preferences object for this package.
@@ -33,7 +34,7 @@ def _get_addon_prefs():
 
 
 class UV_PT_spline_panel(bpy.types.Panel):
-    bl_label = 'Spline'
+    bl_label = iface_('Spline')
     bl_category = 'ULT'
     bl_order = 10
     bl_space_type = "IMAGE_EDITOR"
@@ -45,10 +46,10 @@ class UV_PT_spline_panel(bpy.types.Panel):
         use_uv_sync = getattr(context.scene.tool_settings, "use_uv_select_sync", False)
         op_row = col.row(align=True)
         op_row.enabled = not bool(use_uv_sync)
-        op_row.operator(operators_spline.UV_OT_spline_adjust_modal.bl_idname,
-                        text='Adjust with Curve (Modal)', icon='CURVE_BEZCURVE')
+        op_row.operator(spline.UV_OT_spline_adjust_modal.bl_idname,
+                        text=iface_('Adjust with Curve (Modal)'), icon='CURVE_BEZCURVE')
         if use_uv_sync:
-            col.label(text="Cannot run while UV sync selection is on.", icon='INFO')
+            col.label(text=iface_("Cannot run while UV sync selection is on."), icon='INFO')
 
         prefs = _get_addon_prefs()
         if prefs:
@@ -57,13 +58,13 @@ class UV_PT_spline_panel(bpy.types.Panel):
                 box = col.box()
                 # window manager prop is created in register(); guard access
                 if hasattr(bpy.context.window_manager, "uv_spline_auto_ctrl_count"):
-                    box.prop(bpy.context.window_manager, "uv_spline_auto_ctrl_count", text="Control Points")
+                    box.prop(bpy.context.window_manager, "uv_spline_auto_ctrl_count", text=iface_("Control Points"))
             except Exception:
                 pass
 
 
 class UV_PT_loop_equalize_auto(bpy.types.Panel):
-    bl_label = 'UV Loop Equalize'
+    bl_label = iface_('UV Loop Equalize')
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'ULT'
@@ -89,7 +90,7 @@ class UV_PT_loop_equalize_auto(bpy.types.Panel):
                 pass
 
         if not hasattr(wm, 'uvlseq_settings'):
-            layout.label(text='Initializing UV Loop Equalize…')
+            layout.label(text=iface_('Initializing UV Loop Equalize…'))
             return
 
         sel = wm.uvlseq_settings.iter_choice
@@ -108,7 +109,7 @@ class UV_PT_loop_equalize_auto(bpy.types.Panel):
         col = layout.column(align=True)
         col.enabled = not sync_on
 
-        op_auto = col.operator("uv.loop_equalize", text='Auto Equalize', icon="ALIGN_CENTER")
+        op_auto = col.operator("uv.loop_equalize", text=iface_('Auto Equalize'), icon="ALIGN_CENTER")
         try:
             op_auto.closed_loop = 'AUTO'
             op_auto.repeat_closed_only = wm.uvlseq_settings.repeat_closed_only
@@ -117,7 +118,7 @@ class UV_PT_loop_equalize_auto(bpy.types.Panel):
         _apply_iter(op_auto)
 
         row = col.row(align=True)
-        op_open = row.operator("uv.loop_equalize", text='Open Loop', icon="CURVE_PATH")
+        op_open = row.operator("uv.loop_equalize", text=iface_('Open Loop'), icon="CURVE_PATH")
         try:
             op_open.closed_loop = 'OPEN'
             op_open.repeat_closed_only = wm.uvlseq_settings.repeat_closed_only
@@ -125,7 +126,7 @@ class UV_PT_loop_equalize_auto(bpy.types.Panel):
             pass
         _apply_iter(op_open)
 
-        op_close = row.operator("uv.loop_equalize", text='Closed Loop', icon="MOD_CURVE")
+        op_close = row.operator("uv.loop_equalize", text=iface_('Closed Loop'), icon="MOD_CURVE")
         try:
             op_close.closed_loop = 'CLOSED'
             op_close.repeat_closed_only = wm.uvlseq_settings.repeat_closed_only
@@ -135,17 +136,17 @@ class UV_PT_loop_equalize_auto(bpy.types.Panel):
 
         box_iter = col.box()
         row_head = box_iter.row(align=True)
-        row_head.label(text="Iterations")
-        row_head.prop(wm.uvlseq_settings, "repeat_closed_only", text="Closed loops only")
+        row_head.label(text=iface_("Iterations"))
+        row_head.prop(wm.uvlseq_settings, "repeat_closed_only", text=iface_("Closed loops only"))
         row_iter = box_iter.row(align=True)
         row_iter.prop(wm.uvlseq_settings, "iter_choice", expand=True)
 
         if sync_on:
-            layout.label(text="Cannot run while UV sync selection is on.", icon='INFO')
+            layout.label(text=iface_("Cannot run while UV sync selection is on."), icon='INFO')
 
 
 class UV_PT_loop_equalize_straighten(bpy.types.Panel):
-    bl_label = 'Straighten and Equalize'
+    bl_label = iface_('Straighten and Equalize')
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'ULT'
@@ -166,15 +167,15 @@ class UV_PT_loop_equalize_straighten(bpy.types.Panel):
         col.enabled = not sync_on
 
         col.operator("uv.loop_equalize_straight_open",
-                     text='Straighten and Equalize',
+                     text=iface_('Straighten and Equalize'),
                      icon="IPO_LINEAR")
 
         if sync_on:
-            layout.label(text="Cannot run while UV sync selection is on.", icon='INFO')
+            layout.label(text=iface_("Cannot run while UV sync selection is on."), icon='INFO')
 
 
 class UV_PT_loop_match3d_ratio(bpy.types.Panel):
-    bl_label = 'Match 3D Ratio'
+    bl_label = iface_('Match 3D Ratio')
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'ULT'
@@ -191,28 +192,28 @@ class UV_PT_loop_match3d_ratio(bpy.types.Panel):
         sync_on = bool(ts) and ts.use_uv_select_sync
         col = layout.column(align=True); col.enabled = not sync_on
         row0 = col.row(align=True)
-        op = row0.operator("uv.loop_match3d_ratio", text='Auto Match 3D Ratio', icon='ALIGN_CENTER')
+        op = row0.operator("uv.loop_match3d_ratio", text=iface_('Auto Match 3D Ratio'), icon='ALIGN_CENTER')
         try:
             op.closed_loop = 'AUTO'
         except Exception:
             pass
         row1 = col.row(align=True)
-        op = row1.operator("uv.loop_match3d_ratio", text='Open Loop', icon='CURVE_PATH')
+        op = row1.operator("uv.loop_match3d_ratio", text=iface_('Open Loop'), icon='CURVE_PATH')
         try:
             op.closed_loop = 'OPEN'
         except Exception:
             pass
-        op = row1.operator("uv.loop_match3d_ratio", text='Closed Loop', icon='MOD_CURVE')
+        op = row1.operator("uv.loop_match3d_ratio", text=iface_('Closed Loop'), icon='MOD_CURVE')
         try:
             op.closed_loop = 'CLOSED'
         except Exception:
             pass
         if sync_on:
-            layout.label(text="Cannot run while UV sync selection is on.", icon='INFO')
+            layout.label(text=iface_("Cannot run while UV sync selection is on."), icon='INFO')
 
 
 class UV_PT_loop_match3d_ratio_straight(bpy.types.Panel):
-    bl_label = 'Straighten Match 3D Ratio (Open only)'
+    bl_label = iface_('Straighten Match 3D Ratio (Open only)')
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'ULT'
@@ -228,9 +229,9 @@ class UV_PT_loop_match3d_ratio_straight(bpy.types.Panel):
         ts = getattr(context,'tool_settings',None)
         sync_on = bool(ts) and ts.use_uv_select_sync
         col = layout.column(align=True); col.enabled = not sync_on
-        col.operator("uv.loop_match3d_ratio_straight_open", text='Straighten and Match 3D Ratio', icon='IPO_LINEAR')
+        col.operator("uv.loop_match3d_ratio_straight_open", text=iface_('Straighten and Match 3D Ratio'), icon='IPO_LINEAR')
         if sync_on:
-            layout.label(text="Cannot run while UV sync selection is on.", icon='INFO')
+            layout.label(text=iface_("Cannot run while UV sync selection is on."), icon='INFO')
 
 
 # --- registration helpers ---
