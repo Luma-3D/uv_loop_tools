@@ -6,6 +6,7 @@ translation_dict = {
         # Panels
         ("*", "Spline"): "スプライン",
         ("*", "Adjust with Curve (Modal)"): "カーブで調整（モーダル）",
+        ("*", "Only available in Edit Mode."): "編集モードで実行可能です。",
         ("*", "Cannot run while UV sync selection is on."): "UV選択同期がオンのため実行できません。",
         ("*", "Control Points"): "制御点数",
         ("*", "UV Loop Equalize"): "形状を維持して等間隔",
@@ -15,10 +16,11 @@ translation_dict = {
         ("*", "Closed Loop"): "閉ループ",
         ("*", "Iterations"): "繰り返し",
         ("*", "Closed loops only"): "閉ループのみ",
-        ("*", "Straighten and Equalize"): "直線化して等間隔",
+        ("*", "Straighten Equalize"): "直線化して等間隔",
+        ("*", "Straighten and Equalize"): "直線化(等間隔)",
         ("*", "Match 3D Ratio"): "形状を維持して3D比率",
         ("*", "Auto Match 3D Ratio"): "自動判定して3D比率",
-        ("*", "Straighten and Match 3D Ratio (Open only)"): "直線化して3D比率(開ループのみ)",
+        ("*", "Straighten Match 3D Ratio (Open only)"): "直線化して3D比率(開ループのみ)",
         ("*", "Straighten and Match 3D Ratio"): "直線化(3D比率)",
 
         # Preferences
@@ -44,13 +46,17 @@ translation_dict = {
         ("*", "Options"): "オプション",
         ("*", "Weld tolerance"): "溶接しきい値",
         ("*", "Adjust with Curve (Modal)"): "カーブで調整（モーダル）",
-        ("*", "[UV Spline] Curves: {count_curves} Points(each): {points} (H: toggle display, Ctrl+Wheel: current shape ±, Shift+Wheel: original shape ±)"): "[UVスプライン] カーブ: {count_curves} 制御点(各): {points} (H: 表示切替, Ctrl+ホイール: 現在形状±, Shift+ホイール: 原形状±)",
+        ("*", "[UV Spline] Curves: {count_curves}  Points(avg): {points}"): "[UVスプライン] カーブ: {count_curves} 制御点(平均): {points}",
+        ("*", "Esc/RMB: Exit | G/LMB(Drag): Move | H: Hide spline | Shift+LMB: Multiple selection"): "Esc/RMB: 確定 | G/LMB(ドラッグ): 移動 | H: スプライン表示切り替え | Shift+LMB: 複数選択",
+        ("*", "Ctrl/Shift+Wheel: Change control points | Ctrl+LMB: Add or delete | Del: Delete | R: Reset deform"): "Ctrl/Shift+Wheel: 制御点数の変更 | Ctrl+LMB: 制御点の追加/削除 | Del: 制御点の削除 | R: 変形のリセット",
+        ("*", "(while moving)"): "(移動中)",
+        ("*", "RMB: Move cancel | X/Y: axis lock"): "RMB: 移動キャンセル | X/Y: 移動軸固定",
         ("Operator", "Cannot run while UV sync selection is on. Please disable sync in the UV editor header."): "UV選択同期がONのため実行できません。UVエディタのヘッダーで同期をOFFにしてください。",
         ("Operator", "Please run from the UV/Image Editor while editing a mesh."): "メッシュを編集モードにした状態でUVエディタから実行してください。",
         ("Operator", "Active object must be a mesh in Edit Mode."): "アクティブオブジェクトは編集モード中のメッシュである必要があります。",
         ("Operator", "No WINDOW region found in Image Editor."): "Image Editor に WINDOW リージョンが見つかりません。",
         ("*", "Edge loops: Open {count_open} / Closed {count_closed} Total iters {total_iters} (avg {avg_iter:.2f}) Moved verts {moved_vis_total}"): "エッジループ: 開 {count_open} / 閉 {count_closed} 繰り返し 合計 {total_iters} 回（平均 {avg_iter:.2f} 回/ループ） 移動頂点数 {moved_vis_total}",
-        ("*", "Straighten Equalize: Open {count_open} / Closed (skipped) {count_closed} Moved verts {moved_vis_total}"): "直線均等: 開 {count_open} / 閉（無処理）{count_closed} 移動頂点数 {moved_vis_total}",
+        ("*", "Straighten Equalize: Open {count_open} / Closed (skipped) {count_closed} Moved verts {moved_vis_total}"): "直線均等: 開 {count_open} / 閉（処理なし）{count_closed} 移動頂点数 {moved_vis_total}",
     }
 }
 

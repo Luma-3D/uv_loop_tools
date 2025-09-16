@@ -6,6 +6,7 @@ from . import properties, utils
 from .operators import spline, equalize, match3d
 from bpy.app.translations import pgettext_iface as iface_
 
+
 def _get_addon_prefs():
     """Try to find the addon preferences object for this package.
     We look for any installed addon whose module name contains 'uv_loop_tools'
@@ -33,6 +34,14 @@ def _get_addon_prefs():
     return None
 
 
+# Helper poll used for panels that should be visible but possibly disabled
+@classmethod
+def _image_editor_mesh_poll(cls, context):
+    obj = context.active_object
+    return (context.area and context.area.type == 'IMAGE_EDITOR'
+            and obj and obj.type == 'MESH')
+
+
 class UV_PT_spline_panel(bpy.types.Panel):
     bl_label = iface_('Spline')
     bl_category = 'ULT'
@@ -40,27 +49,43 @@ class UV_PT_spline_panel(bpy.types.Panel):
     bl_space_type = "IMAGE_EDITOR"
     bl_region_type = "UI"
 
+    # show panel when a mesh is active in the image editor (mode doesn't matter here)
+    poll = _image_editor_mesh_poll
+
     def draw(self, context):
         layout = self.layout
         col = layout.column(align=True)
+
+        obj = context.active_object
+        is_edit = bool(obj) and getattr(obj, "mode", "") == 'EDIT'
+
+        # respect UV sync setting: if sync is on, operators should be disabled
         use_uv_sync = getattr(context.scene.tool_settings, "use_uv_select_sync", False)
+
+        # Top row: main operator. Enabled only in Edit Mode and when UV sync is off
         op_row = col.row(align=True)
-        op_row.enabled = not bool(use_uv_sync)
+        op_row.enabled = is_edit and (not bool(use_uv_sync))
         op_row.operator(spline.UV_OT_spline_adjust_modal.bl_idname,
                         text=iface_('Adjust with Curve (Modal)'), icon='CURVE_BEZCURVE')
-        if use_uv_sync:
-            col.label(text=iface_("Cannot run while UV sync selection is on."), icon='INFO')
 
         prefs = _get_addon_prefs()
         if prefs:
             try:
                 apr = prefs.preferences
                 box = col.box()
+                # box controls enabled only in edit mode
+                box.enabled = is_edit
                 # window manager prop is created in register(); guard access
                 if hasattr(bpy.context.window_manager, "uv_spline_auto_ctrl_count"):
                     box.prop(bpy.context.window_manager, "uv_spline_auto_ctrl_count", text=iface_("Control Points"))
             except Exception:
                 pass
+        
+        # If not in Edit Mode, show info
+        if not is_edit:
+            layout.label(text=iface_("Only available in Edit Mode."), icon='INFO')
+        elif use_uv_sync:
+            layout.label(text=iface_("Cannot run while UV sync selection is on."), icon='INFO')
 
 
 class UV_PT_loop_equalize_auto(bpy.types.Panel):
@@ -70,11 +95,7 @@ class UV_PT_loop_equalize_auto(bpy.types.Panel):
     bl_category = 'ULT'
     bl_order = 20
 
-    @classmethod
-    def poll(cls, context):
-        obj = context.active_object
-        return (context.area and context.area.type == 'IMAGE_EDITOR'
-                and obj and obj.type == 'MESH' and obj.mode == 'EDIT')
+    poll = _image_editor_mesh_poll
 
     def draw(self, context):
         layout = self.layout
@@ -106,8 +127,12 @@ class UV_PT_loop_equalize_auto(bpy.types.Panel):
                 # Operator may not expose iter_mode/iter_count properties; ignore in that case
                 pass
 
+        obj = context.active_object
+        is_edit = bool(obj) and getattr(obj, "mode", "") == 'EDIT'
+
         col = layout.column(align=True)
-        col.enabled = not sync_on
+        # enabled only when in edit mode and UV sync is off
+        col.enabled = is_edit and (not sync_on)
 
         op_auto = col.operator("uv.loop_equalize", text=iface_('Auto Equalize'), icon="ALIGN_CENTER")
         try:
@@ -141,36 +166,39 @@ class UV_PT_loop_equalize_auto(bpy.types.Panel):
         row_iter = box_iter.row(align=True)
         row_iter.prop(wm.uvlseq_settings, "iter_choice", expand=True)
 
-        if sync_on:
+        if not is_edit:
+            layout.label(text=iface_("Only available in Edit Mode."), icon='INFO')
+        elif sync_on:
             layout.label(text=iface_("Cannot run while UV sync selection is on."), icon='INFO')
 
 
 class UV_PT_loop_equalize_straighten(bpy.types.Panel):
-    bl_label = iface_('Straighten and Equalize')
+    bl_label = iface_('Straighten Equalize')
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'ULT'
     bl_order = 30
 
-    @classmethod
-    def poll(cls, context):
-        obj = context.active_object
-        return (context.area and context.area.type == 'IMAGE_EDITOR'
-                and obj and obj.type == 'MESH' and obj.mode == 'EDIT')
+    poll = _image_editor_mesh_poll
 
     def draw(self, context):
         layout = self.layout
         ts = getattr(context, "tool_settings", None)
         sync_on = bool(ts) and ts.use_uv_select_sync
 
+        obj = context.active_object
+        is_edit = bool(obj) and getattr(obj, "mode", "") == 'EDIT'
+
         col = layout.column(align=True)
-        col.enabled = not sync_on
+        col.enabled = is_edit and (not sync_on)
 
         col.operator("uv.loop_equalize_straight_open",
                      text=iface_('Straighten and Equalize'),
-                     icon="IPO_LINEAR")
+                     icon='IPO_LINEAR')
 
-        if sync_on:
+        if not is_edit:
+            layout.label(text=iface_("Only available in Edit Mode."), icon='INFO')
+        elif sync_on:
             layout.label(text=iface_("Cannot run while UV sync selection is on."), icon='INFO')
 
 
@@ -181,16 +209,18 @@ class UV_PT_loop_match3d_ratio(bpy.types.Panel):
     bl_category = 'ULT'
     bl_order = 40
 
-    @classmethod
-    def poll(cls, context):
-        obj = context.active_object
-        return (context.area and context.area.type=='IMAGE_EDITOR' and obj and obj.type=='MESH' and obj.mode=='EDIT')
+    poll = _image_editor_mesh_poll
 
     def draw(self, context):
         layout = self.layout
         ts = getattr(context,'tool_settings',None)
         sync_on = bool(ts) and ts.use_uv_select_sync
-        col = layout.column(align=True); col.enabled = not sync_on
+
+        obj = context.active_object
+        is_edit = bool(obj) and getattr(obj, "mode", "") == 'EDIT'
+
+        col = layout.column(align=True)
+        col.enabled = is_edit and (not sync_on)
         row0 = col.row(align=True)
         op = row0.operator("uv.loop_match3d_ratio", text=iface_('Auto Match 3D Ratio'), icon='ALIGN_CENTER')
         try:
@@ -208,7 +238,10 @@ class UV_PT_loop_match3d_ratio(bpy.types.Panel):
             op.closed_loop = 'CLOSED'
         except Exception:
             pass
-        if sync_on:
+
+        if not is_edit:
+            layout.label(text=iface_("Only available in Edit Mode."), icon='INFO')
+        elif sync_on:
             layout.label(text=iface_("Cannot run while UV sync selection is on."), icon='INFO')
 
 
@@ -219,18 +252,23 @@ class UV_PT_loop_match3d_ratio_straight(bpy.types.Panel):
     bl_category = 'ULT'
     bl_order = 50
 
-    @classmethod
-    def poll(cls, context):
-        obj = context.active_object
-        return (context.area and context.area.type=='IMAGE_EDITOR' and obj and obj.type=='MESH' and obj.mode=='EDIT')
+    poll = _image_editor_mesh_poll
 
     def draw(self, context):
         layout = self.layout
         ts = getattr(context,'tool_settings',None)
         sync_on = bool(ts) and ts.use_uv_select_sync
-        col = layout.column(align=True); col.enabled = not sync_on
+
+        obj = context.active_object
+        is_edit = bool(obj) and getattr(obj, "mode", "") == 'EDIT'
+
+        col = layout.column(align=True)
+        col.enabled = is_edit and (not sync_on)
         col.operator("uv.loop_match3d_ratio_straight_open", text=iface_('Straighten and Match 3D Ratio'), icon='IPO_LINEAR')
-        if sync_on:
+
+        if not is_edit:
+            layout.label(text=iface_("Only available in Edit Mode."), icon='INFO')
+        elif sync_on:
             layout.label(text=iface_("Cannot run while UV sync selection is on."), icon='INFO')
 
 
@@ -258,7 +296,7 @@ def register():
                 pass
         raise
 
-    # create WindowManager pointer if the properties class exists
+    # create WindowManager pointer if the properties class is available
     try:
         if hasattr(properties, "UVLSEQ_Settings"):
             if not hasattr(bpy.types.WindowManager, "uvlseq_settings"):

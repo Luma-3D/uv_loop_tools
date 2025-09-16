@@ -3,7 +3,7 @@ import bpy
 import bmesh
 import math
 import blf
-
+from bpy.app.translations import pgettext_iface as iface_
 # mathutils の Vector / Color 等
 from mathutils import Vector
 import gpu
@@ -110,6 +110,28 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
 
     def _clamp_global(self, n):
         return max(self.ms.all_closed_min(), min(30, int(n)))
+    
+    def _avg_ctrl_count(self):
+        """各スプラインの制御点数の平均（四捨五入）を返す。空なら self.ms.global_points を返す。"""
+        counts = [len(c.ctrl) for c in self.ms.curves if hasattr(c, 'ctrl')]
+        if not counts:
+            return max(self.ms.all_closed_min(), int(self.ms.global_points))
+        avg = sum(counts) / len(counts)
+        # 四捨五入（半上げ）：math.floor(avg + 0.5)
+        rounded = int(math.floor(avg + 0.5))
+        # clamp
+        return max(self.ms.all_closed_min(), min(30, rounded))
+    
+    def _set_global_points_from_average(self):
+        """各スプラインの制御点数の平均（四捨五入）を self.ms.global_points に設定する。"""
+        counts = [len(c.ctrl) for c in self.ms.curves if hasattr(c, 'ctrl')]
+        if not counts:
+            return
+        avg = sum(counts) / len(counts)
+        # 四捨五入（半は上へ）
+        rounded = int(math.floor(avg + 0.5))
+        # clamp to allowed range
+        self.ms.global_points = max(self.ms.all_closed_min(), min(30, rounded))
 
     def _resample_all_from_original(self, count):
         for c in self.ms.curves:
@@ -397,11 +419,25 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                         self._draw_disc(px.x, px.y, point_size*0.9, color_act, shader2d, segments=20)
 
             try:
-                blf.size(0, 12)
-                hud_template = "[UV Spline] Curves: {count_curves} Points(each): {points} (H: toggle display, Ctrl+Wheel: current shape ±, Shift+Wheel: original shape ±)"
-                hud = hud_template.format(count_curves=len(self.ms.curves), points=self.ms.global_points)
-                blf.position(0, 14, 10, 0)
-                blf.draw(0, hud)
+                blf.size(0, 24)
+
+                hud_lines = [
+                    iface_("[UV Spline] Curves: {count_curves}  Points(avg): {points}").format(
+                        count_curves=len(self.ms.curves),
+                        points=self.ms.global_points
+                    ),
+                    iface_("Esc/RMB: Exit | G/LMB(Drag): Move | H: Hide spline | Shift+LMB: Multiple selection"),
+                    iface_("Ctrl/Shift+Wheel: Change control points | Ctrl+LMB: Add or delete | Del: Delete | R: Reset deform"),
+                    iface_("(while moving)"),
+                    iface_("RMB: Move cancel | X/Y: axis lock")
+                ]
+                base_x = 14
+                base_y = 10
+                line_height = 28
+                for i, line in enumerate(hud_lines):
+                    y = base_y + (len(hud_lines) - 1 - i) * line_height
+                    blf.position(0, base_x, y, 0)
+                    blf.draw(0, line)
             except Exception:
                 pass
 
@@ -560,6 +596,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
 
         self._is_drag_mode = False
         self._drag_data = None
+        self._axis_constraint = None
         self._display_spline = True
         self._display_points = True
         self._rmb_pressed = False
@@ -567,6 +604,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
         self._box_selecting = False
         self._box_start = (0,0); self._box_end = (0,0); self._box_add = False
         self._maybe_box_start = None; self._maybe_box_threshold_sq = 9
+        self._axis_constraint = None  # 'X' or 'Y' または None
 
         sizes = [len(c.loops) for c in self.ms.curves]
         self.ms.active_curve = sizes.index(max(sizes)) if sizes else 0
@@ -658,6 +696,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
             if self.region: self.region.tag_redraw()
         except Exception:
             pass
+        self._axis_constraint = None
 
     def _clear_selection(self):
         for c in self.ms.curves:
@@ -714,6 +753,13 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
     def _apply_drag(self, event):
         cur_uv = self._region_to_uv(event.mouse_region_x, event.mouse_region_y)
         delta = cur_uv - self._drag_start_uv
+
+        # --- 軸制限 ---
+        if getattr(self, "_axis_constraint", None) == 'X':
+            delta.y = 0.0
+        elif getattr(self, "_axis_constraint", None) == 'Y':
+            delta.x = 0.0
+
         if self._drag_data:
             for ci, i, base in self._drag_data:
                 c = self.ms.curves[ci]
@@ -744,6 +790,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                 self._box_selecting = False
                 if self.area: self.area.tag_redraw()
                 return {'RUNNING_MODAL'}
+            self._axis_constraint = None
             self.finish(context, cancel=True)
             return {'CANCELLED'}
 
@@ -753,12 +800,17 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                     self._apply_preview_all(context)
                 except Exception:
                     self._restore_ctrl(context)
-                self._is_drag_mode = False; self._drag_data = None; self._drag_start_uv = None
+                self._is_drag_mode = False
+                self._drag_data = None
+                self._axis_constraint = None
+                self._drag_start_uv = None
+                self._axis_constraint = None
                 if hasattr(self,'_ctrl_backup'): self._ctrl_backup = None
                 if self.area: self.area.tag_redraw()
                 if self.region: self.region.tag_redraw()
                 return {'RUNNING_MODAL'}
             else:
+                self._axis_constraint = None
                 self.finish(context, cancel=False)
                 return {'FINISHED'}
 
@@ -779,6 +831,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                     self._restore_ctrl(context)
                     self._is_drag_mode = False
                     self._rmb_was_for_cancel = True
+                    self._axis_constraint = None
                     if self.area: self.area.tag_redraw()
                     return {'RUNNING_MODAL'}
                 return {'RUNNING_MODAL'}
@@ -790,6 +843,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                 if self._is_drag_mode:
                     self._restore_ctrl(context)
                     self._is_drag_mode = False
+                    self._axis_constraint = None
                     if self.area: self.area.tag_redraw()
                     return {'RUNNING_MODAL'}
                 else:
@@ -808,6 +862,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
             self._box_end = self._box_start
             self._box_add = event.shift
             return {'RUNNING_MODAL'}
+        
         if self._box_selecting:
             if event.type == 'MOUSEMOVE':
                 self._box_end = (event.mouse_region_x, event.mouse_region_y)
@@ -834,7 +889,11 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                     self._apply_preview_all(context)
                 except Exception:
                     self._restore_ctrl(context)
-                self._is_drag_mode = False; self._drag_data = None; self._drag_start_uv = None
+                self._is_drag_mode = False
+                self._drag_data = None
+                self._axis_constraint = None
+                self._drag_start_uv = None
+                self._axis_constraint = None
                 if self.area: self.area.tag_redraw()
                 return {'RUNNING_MODAL'}
             self._maybe_box_start = None
@@ -855,6 +914,8 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                         c.active_idx -= 1
                     self.ms.active_curve = cidx
                     # preview changed for that curve only
+                    # --- 再計算: 全カーブの平均を global_points に反映 ---
+                    self._set_global_points_from_average()
                     self._apply_preview_all(context)
                 else:
                     # INSERT (strict, curve-based): pick nearest curve by polyline distance within threshold
@@ -931,6 +992,8 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                         if ci2 != ac:
                             c2.active_idx = -1
                             c2.sel.clear()
+                    # 挿入後に全体の平均を再計算して global_points を同期
+                    self._set_global_points_from_average()
                     self._apply_preview_all(context)
                     return {'RUNNING_MODAL'}
 
@@ -981,7 +1044,10 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                 self._maybe_box_start = None
                 return {'RUNNING_MODAL'}
             if self._is_drag_mode:
-                self._is_drag_mode = False; self._drag_data = None
+                self._is_drag_mode = False
+                self._drag_data = None
+                self._axis_constraint = None
+                self._axis_constraint = None
                 try:
                     self._apply_preview_all(context)
                 except Exception:
@@ -1001,7 +1067,8 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
             return {'RUNNING_MODAL'}
 
         elif event.type in {"WHEELUPMOUSE","WHEELDOWNMOUSE"} and (event.ctrl or event.shift):
-            cur = int(self.ms.global_points); step = 1 if event.type=="WHEELUPMOUSE" else -1
+            # 基準を各スプラインの制御点数の平均（四捨五入）にする
+            cur = int(self._avg_ctrl_count()); step = 1 if event.type == "WHEELUPMOUSE" else -1
             if event.ctrl:
                 # Sync all curves to the new number (user explicitly requested sync with Ctrl+Wheel)
                 new_num = self._clamp_global(cur + step)
@@ -1053,16 +1120,33 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
             return {'RUNNING_MODAL'}
 
         elif event.type == 'DEL' and event.value == 'PRESS':
-            cidx,pidx = self.ms.find_nearest_control(self.mouse_uv, int(getattr(self._get_prefs(), 'point_pick_threshold_px', 16)), self.v2d, self.region)
-            if cidx >= 0 and pidx >= 0:
-                # delete only from that curve (do NOT resample all)
+            for c in self.ms.curves:
+                if not c.sel:
+                    continue
                 try:
-                    self.ms.curves[cidx].ctrl.pop(pidx)
+                    # ソートして逆順に削除（インデックスずれ防止）
+                    for i in sorted(c.sel, reverse=True):
+                        if 0 <= i < len(c.ctrl):
+                            c.ctrl.pop(i)
+                    # 削除後、選択状態をクリア
+                    c.sel.clear()
                 except Exception:
                     pass
-                c = self.ms.curves[cidx]
-                c.sel = {i if i < pidx else i-1 for i in c.sel if i != pidx and (i-1) >= 0}
-                self._apply_preview_all(context)
+            # 全カーブの平均を再計算して global_points を同期
+            self._set_global_points_from_average()
+            self._apply_preview_all(context)
+            return {'RUNNING_MODAL'}
+        
+        elif event.type in {'X', 'Y'} and event.value == 'PRESS':
+            axis = event.type
+            if self._axis_constraint == axis:
+                # 同じキーをもう一度押した → 制限解除
+                self._axis_constraint = None
+                self.report({'INFO'}, "Axis constraint cleared")
+            else:
+                # 新しい制限を設定
+                self._axis_constraint = axis
+                self.report({'INFO'}, f"Axis constrained to {axis}")
             return {'RUNNING_MODAL'}
 
         if event.type in {'MOUSEMOVE','TIMER'}:

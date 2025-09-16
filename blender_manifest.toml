@@ -7,5 +7,5 @@ tagline = "Redistribute UV edge loops with noise tolerance"
 maintainer = "Luma"
 type = "add-on"
 blender_version_min = "4.5.0"
-license = ["SPDX:MIT"]
+license = ["SPDX:GPL-3.0-or-later"]
 category = "UV"
