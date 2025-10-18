@@ -1,48 +1,58 @@
-
 # UV Loop Tools
-
-UV Loop Tools is a Blender add-on that provides utilities for working with UV loops,
-including equalize, match3D, and spline-based operations. This repository contains
-the add-on source, preferences, and operator implementations.
-
-## Features
-
-- Equalize UV loops (closed and straight-open variants)
-- Match 3D ratio distribution for UV loops
-- Interactive spline-based UV editing tools
-
-## Installation
-
-1. Copy this folder into Blender's add-ons directory or install via Preferences → Add-ons → Install...
-2. Enable the add-on in Blender's Preferences → Add-ons.
-
-## Usage
-
-Open the UV Editor and select faces/edges as required for each operator. Use the
-UV menu to run UV Loop Tools operations (Equalize, Match3D, Spline).
-
-## Development
-
-This project is organized as a Python package. To work on it locally:
-
-```powershell
-git clone https://github.com/Luma-3D/uv_loop_tools.git
-cd uv_loop_tools
-# make changes, then
-git add -A
-git commit -m "Describe changes"
-git push
-```
-
-## Contributing
-
-If you want to contribute: fork the repository, create a feature branch, and
-open a pull request with clear description and screenshots if relevant.
-
-## License
-
-This project is GPL-3.0 or later. See the `LICENSE` file for details.
+UV Loop ToolsはBlender用のUVエッジループの編集に特化したアドオンです。
 
 ---
 
-*This README was updated locally and pushed to the repository.*
+## 主な機能 / Features
+
+### スプライン調整（Spline Adjust）
+- UVループをスプライン曲線として調整するモーダルツール。
+- 制御点数を自由に変更可能。
+- 開ループ・閉ループの両方に対応。
+
+### UV 等間隔化（Equalize Loops）
+- 選択した UV エッジループの頂点を等間隔に再配置します。
+- UVカーブの形状を保持するモードと、直線化するモードを選択可能。
+- 複数オブジェクト・複数ループ選択に対応。
+- 開ループ・閉ループの両方に対応。
+
+### 3D 比率での再配置（Match 3D Ratio）
+- 3D空間のエッジ長に基づいてUV頂点を再配置します。
+- UVカーブの形状を保持するモードと、直線化するモードを選択可能。
+- 複数オブジェクト・複数ループ選択に対応。
+- 開ループ・閉ループの両方に対応。
+
+---
+
+## Blender 対応バージョン
+
+- Blender **4.5.0** 以降  
+- UV Sync Selection が **OFF** の状態で動作します。
+
+---
+
+##  インストール方法
+
+1. GitHub から `.zip` をダウンロード。  
+2. Blender の [編集] → [プリファレンス] → [アドオン] → [インストール...] を選択。  
+3. ダウンロードした ZIP を指定してインストール。  
+4. "UV Loop Tools" を有効化。
+
+---
+
+## 使用方法（基本）
+
+1. UV エディタでエッジ選択モードに切り替える。  
+2. ループ選択（Alt+クリックなど）で対象エッジを選択。  
+3. サイドバーの **ULT タブ** から目的のツールを実行。  
+   - 「UVを等間隔化」  
+   - 「3D比率で再配置」  
+   - 「3D比率で直線化」  
+4. F9 でパラメータを再調整可能。
+
+---
+
+## ライセンス
+
+このアドオンは **GNU General Public License v3.0 or later (GPL-3.0-or-later)** の下で配布されています。  
+自由に使用・改変・再配布できますが、派生物も同ライセンスで公開する必要があります。
