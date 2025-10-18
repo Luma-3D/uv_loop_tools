@@ -1,58 +1,54 @@
-# UV Loop Tools
-UV Loop ToolsはBlender用のUVエッジループの編集に特化したアドオンです。
+﻿# UV Loop Tools
+
+UV Loop Tools is a Blender add-on focused on editing UV edge loops.
 
 ---
 
-## 主な機能 / Features
+## Key Features
 
-### スプライン調整（Spline Adjust）
-- UVループをスプライン曲線として調整するモーダルツール。
-- 制御点数を自由に変更可能。
-- 開ループ・閉ループの両方に対応。
+### Spline Adjust
+- A modal tool to adjust UV loops using spline curves.
+- Adjustable number of control points.
+- Supports both open and closed loops.
 
-### UV 等間隔化（Equalize Loops）
-- 選択した UV エッジループの頂点を等間隔に再配置します。
-- UVカーブの形状を保持するモードと、直線化するモードを選択可能。
-- 複数オブジェクト・複数ループ選択に対応。
-- 開ループ・閉ループの両方に対応。
+### Equalize Loops
+- Redistribute selected UV loop vertices evenly.
+- Options to preserve the UV curve shape or to straighten the loop.
+- Supports multiple objects and multiple loops.
+- Works with both open and closed loops.
 
-### 3D 比率での再配置（Match 3D Ratio）
-- 3D空間のエッジ長に基づいてUV頂点を再配置します。
-- UVカーブの形状を保持するモードと、直線化するモードを選択可能。
-- 複数オブジェクト・複数ループ選択に対応。
-- 開ループ・閉ループの両方に対応。
-
----
-
-## Blender 対応バージョン
-
-- Blender **4.5.0** 以降  
-- UV Sync Selection が **OFF** の状態で動作します。
+### Match 3D Ratio
+- Redistribute UV vertices based on 3D edge lengths.
+- Options to preserve curve shape or to straighten the loop.
+- Supports multiple objects and multiple loops.
+- Works with both open and closed loops.
 
 ---
 
-##  インストール方法
-
-1. GitHub から `.zip` をダウンロード。  
-2. Blender の [編集] → [プリファレンス] → [アドオン] → [インストール...] を選択。  
-3. ダウンロードした ZIP を指定してインストール。  
-4. "UV Loop Tools" を有効化。
+## Supported Blender Versions
+- Blender 4.5.0 and later.
+- Works with UV Sync Selection set to OFF.
 
 ---
 
-## 使用方法（基本）
-
-1. UV エディタでエッジ選択モードに切り替える。  
-2. ループ選択（Alt+クリックなど）で対象エッジを選択。  
-3. サイドバーの **ULT タブ** から目的のツールを実行。  
-   - 「UVを等間隔化」  
-   - 「3D比率で再配置」  
-   - 「3D比率で直線化」  
-4. F9 でパラメータを再調整可能。
+## Installation
+1. Download the `.zip` from GitHub.
+2. In Blender: Edit  Preferences  Add-ons  Install...
+3. Select the downloaded ZIP and install.
+4. Enable "UV Loop Tools".
 
 ---
 
-## ライセンス
+## Basic Usage
+1. In the UV Editor, switch to edge selection mode.
+2. Select loop(s) (e.g., Alt+click).
+3. Open the ULT tab in the sidebar and choose a tool:
+   - Equalize UVs
+   - Match 3D Ratio
+   - Match 3D Ratio (Straighten)
+4. Press F9 to adjust operator parameters if needed.
 
-このアドオンは **GNU General Public License v3.0 or later (GPL-3.0-or-later)** の下で配布されています。  
-自由に使用・改変・再配布できますが、派生物も同ライセンスで公開する必要があります。
+---
+
+## License
+This add-on is distributed under the GNU General Public License v3.0 or later (GPL-3.0-or-later).
