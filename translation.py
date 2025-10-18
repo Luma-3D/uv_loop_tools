@@ -55,8 +55,12 @@ translation_dict = {
         ("Operator", "Please run from the UV/Image Editor while editing a mesh."): "メッシュを編集モードにした状態でUVエディタから実行してください。",
         ("Operator", "Active object must be a mesh in Edit Mode."): "アクティブオブジェクトは編集モード中のメッシュである必要があります。",
         ("Operator", "No WINDOW region found in Image Editor."): "Image Editor に WINDOW リージョンが見つかりません。",
+        ("*", "Equalize: Open {count_open} / Closed {count_closed} Moved {moved_vis_total}"): "自動等間隔: 開 {count_open} / 閉 {count_closed} 移動頂点数 {moved_vis_total}",
         ("*", "Edge loops: Open {count_open} / Closed {count_closed} Total iters {total_iters} (avg {avg_iter:.2f}) Moved verts {moved_vis_total}"): "エッジループ: 開 {count_open} / 閉 {count_closed} 繰り返し 合計 {total_iters} 回（平均 {avg_iter:.2f} 回/ループ） 移動頂点数 {moved_vis_total}",
-        ("*", "Straighten Equalize: Open {count_open} / Closed (skipped) {count_closed} Moved verts {moved_vis_total}"): "直線均等: 開 {count_open} / 閉（処理なし）{count_closed} 移動頂点数 {moved_vis_total}",
+        ("*", "Straighten open loops: Open {count_open} Moved {moved_vis_total}"): "直線等間隔: 開 {count_open} 移動頂点数 {moved_vis_total}",
+        ("*", "3D Ratio (preserve shape): Open {count_open} / Closed {count_closed} Moved verts {moved_vis_total}"): "形状を維持して3D比率: 開 {count_open} / 閉 {count_closed} 移動頂点数 {moved_vis_total}",
+        ("*", "3D Ratio Straighten: Open {count_open} Moved verts {moved_vis_total}"): "直線化3D比: 開 {count_open} 移動頂点数 {moved_vis_total}",
+        ("*", " Skipped {skipped}"): " スキップ {skipped}",
     }
 }
 

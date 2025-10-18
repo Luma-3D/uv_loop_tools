@@ -1,12 +1,8 @@
 # operators/equalize.py
-"""
-Clean equalize operators with safe numeric normalization to avoid _PropertyDeferred arithmetic errors.
-"""
-
 import bpy
 import bmesh
 from mathutils import Vector
-
+from bpy.app.translations import pgettext as pgett
 from .. import utils, properties
 
 
@@ -200,9 +196,13 @@ class UV_OT_loop_equalize(bpy.types.Operator):
                 self.report({'ERROR'}, 'No valid edge loops found.')
             return {'CANCELLED'}
 
-        msg = f'Equalize: Open {count_open} / Closed {count_closed} Moved {moved_vis_total}'
+        msg = pgett("Equalize: Open {count_open} / Closed {count_closed} Moved {moved_vis_total}").format(
+            count_open=count_open,
+            count_closed=count_closed,
+            moved_vis_total=moved_vis_total
+        )
         if skipped > 0:
-            msg += f' Skipped {skipped}'
+            msg += pgett(" Skipped {skipped}").format(skipped=skipped)
         self.report({'INFO'}, msg)
         return {'FINISHED'}
 
@@ -363,8 +363,8 @@ class UV_OT_loop_equalize_straight_open(bpy.types.Operator):
                 self.report({'ERROR'}, 'No valid edge loops found.')
             return {'CANCELLED'}
 
-        msg = f'Straighten open loops: Open {count_open} Moved {moved_vis_total}'
-        if skipped > 0: msg += f' Skipped {skipped}'
+        msg = pgett("Straighten open loops: Open {count_open} Moved {moved_vis_total}").format(count_open=count_open, moved_vis_total=moved_vis_total)
+        if skipped > 0: msg += pgett(" Skipped {skipped}").format(skipped=skipped)
         self.report({'INFO'}, msg)
         return {'FINISHED'}
 

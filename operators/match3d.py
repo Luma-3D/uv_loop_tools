@@ -4,6 +4,7 @@ import bmesh
 
 # mathutils の Vector / Color 等
 from mathutils import Vector
+from bpy.app.translations import pgettext as pgett
 from .. import utils, properties
 
 class UV_OT_loop_match3d_ratio(bpy.types.Operator):
@@ -272,8 +273,12 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
             else:
                 self.report({'ERROR'}, "No valid edge loops found.")
             return {'CANCELLED'}
-        msg=f"3D Ratio (preserve shape): Open {count_open} / Closed {count_closed} Moved verts {moved_vis_total}"
-        if skipped>0: msg+=f" スキップ {skipped}"
+        msg=pgett("3D Ratio (preserve shape): Open {count_open} / Closed {count_closed} Moved verts {moved_vis_total}").format(
+            count_open=count_open, 
+            count_closed=count_closed, 
+            moved_vis_total=moved_vis_total
+        )
+        if skipped>0: msg+=pgett(" Skipped {skipped}").format(skipped=skipped)
         self.report({'INFO'}, msg)
         return {'FINISHED'}
 
@@ -482,8 +487,11 @@ class UV_OT_loop_match3d_ratio_straight_open(bpy.types.Operator):
             else:
                 self.report({'ERROR'}, "No valid edge loops found.")
             return {'CANCELLED'}
-        msg=f"3D Ratio Straighten: Open {count_open} / Closed (skipped) {count_closed} Moved verts {moved_vis_total}"
-        if skipped>0: msg+=f" スキップ {skipped}"
+        msg=pgett("3D Ratio Straighten: Open {count_open} Moved verts {moved_vis_total}").format(
+            count_open=count_open, 
+            moved_vis_total=moved_vis_total
+        )
+        if skipped>0: msg+=pgett(" Skipped {skipped}").format(skipped=skipped)
         self.report({'INFO'}, msg)
         return {'FINISHED'}
     

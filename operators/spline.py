@@ -4,6 +4,7 @@ import bmesh
 import math
 import blf
 from bpy.app.translations import pgettext_iface as iface_
+from bpy.app.translations import pgettext as pgett
 # mathutils の Vector / Color 等
 from mathutils import Vector
 import gpu
