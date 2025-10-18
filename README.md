@@ -27,7 +27,6 @@ UV Loop Tools is a Blender add-on focused on editing UV edge loops.
 
 ## Supported Blender Versions
 - Blender 4.5.0 and later.
-- Works with UV Sync Selection set to OFF.
 
 ---
 
