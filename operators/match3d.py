@@ -11,7 +11,7 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
     bl_idname = "uv.loop_match3d_ratio"
     bl_label = "Match 3D Ratio (Preserve Shape)"
     bl_description = "Redistribute selected UV edge loops so spacing matches 3D edge ratios while preserving shape"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'UNDO'}
     closed_loop = bpy.props.EnumProperty(
         name="Loop Type",
         description="Specify if auto-detection fails",
@@ -287,7 +287,7 @@ class UV_OT_loop_match3d_ratio_straight_open(bpy.types.Operator):
     bl_idname = "uv.loop_match3d_ratio_straight_open"
     bl_label = "Match 3D Ratio Straighten (Open loops only)"
     bl_description = "For open loops, redistribute along the endpoint line according to 3D spacing ratios (closed loops unchanged)"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'UNDO'}
 
     weld_tolerance = bpy.props.FloatProperty(
         name="Weld tolerance",

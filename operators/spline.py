@@ -70,7 +70,7 @@ class MultiSplineState:
 class UV_OT_spline_adjust_modal(bpy.types.Operator):
     bl_idname = "uv.spline_adjust_modal"
     bl_label = "Adjust with Curve (Modal)"
-    bl_options = {'REGISTER', 'UNDO', 'BLOCKING'}
+    bl_options = {'UNDO', 'BLOCKING'}
 
     auto_ctrl_count = bpy.props.IntProperty(default=4, min=2, max=30)
 

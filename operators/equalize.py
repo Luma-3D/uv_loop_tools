@@ -1,4 +1,4 @@
-# operators/equalize.py
+﻿# operators/equalize.py
 import bpy
 import bmesh
 from mathutils import Vector
@@ -10,7 +10,7 @@ class UV_OT_loop_equalize(bpy.types.Operator):
     bl_idname = "uv.loop_equalize"
     bl_label = "UV Edge Equalize"
     bl_description = "Evenly redistribute selected UV edge loops"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'UNDO'}
 
     closed_loop = bpy.props.EnumProperty(
         name="Loop Type",
@@ -211,7 +211,7 @@ class UV_OT_loop_equalize_straight_open(bpy.types.Operator):
     bl_idname = "uv.loop_equalize_straight_open"
     bl_label = "UV Straighten Open Loops"
     bl_description = "Redistribute open loops evenly along endpoint line"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'UNDO'}
 
     weld_tolerance = bpy.props.FloatProperty(
         name="Weld tolerance",
