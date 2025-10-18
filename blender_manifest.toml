@@ -1,4 +1,4 @@
-schema_version = "1.0.0"
+﻿schema_version = "1.0.0"
 
 id = "uv_loop_tools"
 version = "1.0.0"
@@ -9,3 +9,15 @@ type = "add-on"
 blender_version_min = "4.5.0"
 license = ["SPDX:GPL-3.0-or-later"]
 category = "UV"
+
+# Project website shown in Blender's addon panel
+website = "https://github.com/Luma-3D/uv_loop_tools"
+doc_url = "https://github.com/Luma-3D/uv_loop_tools"
+tracker = "https://github.com/Luma-3D/uv_loop_tools/issues"
+
+# Repository information
+repository = { type = "git", url = "https://github.com/Luma-3D/uv_loop_tools.git" }
+
+# Update URL: a zip archive that Blender can download to update the addon
+# Pointing to the main branch archive; you can also use a releases URL if preferred.
+update_url = "https://github.com/Luma-3D/uv_loop_tools/archive/refs/heads/main.zip"
