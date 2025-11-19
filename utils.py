@@ -420,7 +420,6 @@ def build_all_selected_uv_paths(bm, uv_layer):
                 nodes.setdefault(kb, b)
                 graph.setdefault(ka, set()).add(kb)
                 graph.setdefault(kb, set()).add(ka)
-    return graph, nodes
 
     if not graph:
         return []

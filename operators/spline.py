@@ -444,7 +444,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
 
     def invoke(self, context, event):
         if getattr(context.scene.tool_settings, "use_uv_select_sync", False):
-            self.report({'WARNING'}, "Cannot run while UV sync selection is on. Please disable sync in the UV editor header.")
+            self.report({'WARNING'}, pgett("Cannot run while UV sync selection is on. Please disable sync in the UV editor header."))
             return {'CANCELLED'}
         if context.area is None or context.area.type != 'IMAGE_EDITOR':
             self.report({'WARNING'}, "Please run from the UV/Image Editor while editing a mesh.")

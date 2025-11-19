@@ -57,7 +57,7 @@ class UV_OT_loop_equalize(bpy.types.Operator):
 
         ts = getattr(context, 'tool_settings', None)
         if ts and getattr(ts, 'use_uv_select_sync', False):
-            self.report({'WARNING'}, 'UV sync selection on; disable and retry')
+            self.report({'WARNING'}, pgett("Cannot run while UV sync selection is on. Please disable sync in the UV editor header."))
             return {'CANCELLED'}
 
         objs = [o for o in context.selected_editable_objects if o.type == 'MESH' and o.mode == 'EDIT']
@@ -240,7 +240,7 @@ class UV_OT_loop_equalize_straight_open(bpy.types.Operator):
 
         ts = getattr(context, 'tool_settings', None)
         if ts and getattr(ts, 'use_uv_select_sync', False):
-            self.report({'WARNING'}, 'UV sync selection on; disable and retry')
+            self.report({'WARNING'}, pgett("Cannot run while UV sync selection is on. Please disable sync in the UV editor header."))
             return {'CANCELLED'}
 
         objs = [o for o in context.selected_editable_objects if o.type == 'MESH' and o.mode == 'EDIT']

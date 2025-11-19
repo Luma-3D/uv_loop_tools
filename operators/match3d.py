@@ -49,7 +49,7 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
 
         ts = getattr(context, "tool_settings", None)
         if ts and getattr(ts, "use_uv_select_sync", False):
-            self.report({'WARNING'}, "Cannot run while UV sync selection is on. Please disable sync in the UV editor header.")
+            self.report({'WARNING'}, pgett("Cannot run while UV sync selection is on. Please disable sync in the UV editor header."))
             return {'CANCELLED'}
 
         objs = [o for o in context.selected_editable_objects if o.type == 'MESH' and o.mode == 'EDIT']
@@ -323,7 +323,7 @@ class UV_OT_loop_match3d_ratio_straight_open(bpy.types.Operator):
 
         ts = getattr(context, "tool_settings", None)
         if ts and getattr(ts, "use_uv_select_sync", False):
-            self.report({'WARNING'}, "Cannot run while UV sync selection is on. Please disable sync in the UV editor header.")
+            self.report({'WARNING'}, pgett("Cannot run while UV sync selection is on. Please disable sync in the UV editor header."))
             return {'CANCELLED'}
 
         objs = [o for o in context.selected_editable_objects if o.type == 'MESH' and o.mode == 'EDIT']
