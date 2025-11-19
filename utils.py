@@ -4,17 +4,15 @@ import bpy
 from mathutils import Vector
 import math
 
-def _update_iter_from_f9_choice(self, context):
-    """F9の見せかけプロパティを実プロパティへ反映"""
-    sel = getattr(self, "f9_iter_choice", 'AUTO')
-    if sel == 'AUTO':
-        self.iter_mode = 'AUTO'
+def uv_edge_selected(l, uv_layer):
+    """Blender 4.5〜と5.0以降でUVエッジ選択判定を切り替える"""
+    if hasattr(l, "uv_select_edge"):
+        # Blender 5.x
+        return l.uv_select_edge
     else:
-        self.iter_mode = 'COUNT'
-        try:
-            self.iter_count = max(1, min(100, int(sel)))
-        except Exception:
-            pass
+        # Blender 4.5.x
+        luv = l[uv_layer]
+        return getattr(luv, "select_edge", False)
 
 def connected_components_keys(graph):
     """
@@ -409,9 +407,8 @@ def build_all_selected_uv_paths(bm, uv_layer):
             luv = l[uv_layer]
             ln = l.link_loop_next
             luvn = ln[uv_layer]
-            # --- Blender 5.0 対応：UV edge selection ---
-            if l.uv_select_edge:
-                ln = l.link_loop_next
+
+            if uv_edge_selected(l, uv_layer):
                 a = Vector(luv.uv)
                 b = Vector(luvn.uv)
                 ka = _uv_key_graph(a)

@@ -5,7 +5,7 @@ import bmesh
 # mathutils の Vector / Color 等
 from mathutils import Vector
 from bpy.app.translations import pgettext as pgett
-from .. import utils, properties
+from .. import utils
 
 class UV_OT_loop_match3d_ratio(bpy.types.Operator):
     bl_idname = "uv.loop_match3d_ratio"
@@ -97,13 +97,13 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
                     ln = l.link_loop_next
                     luvn = ln[uv_layer]
 
-                    # Blender 5.0: select_edge は無効。両方のUVが選択されているかで判定する
-                    if l.uv_select_edge:
-                        ln = l.link_loop_next
-                        p = Vector(luv.uv); q = Vector(luvn.uv)
+                    if utils.uv_edge_selected(l, uv_layer):
+                        p = Vector(luv.uv)
+                        q = Vector(luvn.uv)
                         add_map(p, l)
                         add_map(q, ln)
-                        a = uv_key_graph(p); b = uv_key_graph(q)
+                        a = uv_key_graph(p)
+                        b = uv_key_graph(q)
                         graph.setdefault(a, set()).add(b)
                         graph.setdefault(b, set()).add(a)
                         found = True
@@ -370,13 +370,13 @@ class UV_OT_loop_match3d_ratio_straight_open(bpy.types.Operator):
                     ln = l.link_loop_next
                     luvn = ln[uv_layer]
 
-                    # Blender 5.0: select_edge は無効。両方のUVが選択されているかで判定する
-                    if l.uv_select_edge:
-                        ln = l.link_loop_next
-                        p = Vector(luv.uv); q = Vector(luvn.uv)
+                    if utils.uv_edge_selected(l, uv_layer):
+                        p = Vector(luv.uv)
+                        q = Vector(luvn.uv)
                         add_map(p, l)
                         add_map(q, ln)
-                        a = uv_key_graph(p); b = uv_key_graph(q)
+                        a = uv_key_graph(p)
+                        b = uv_key_graph(q)
                         graph.setdefault(a, set()).add(b)
                         graph.setdefault(b, set()).add(a)
                         found = True

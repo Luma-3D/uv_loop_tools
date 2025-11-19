@@ -22,7 +22,7 @@ except Exception:
     def batch_for_shader(shader, type, attrs):
         return _DummyBatch()
 
-from .. import utils, properties
+from .. import utils
 
 class CurveData:
     def __init__(self, orig_path, closed_locked):
@@ -484,10 +484,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                     ln = l.link_loop_next
                     luvn = ln[uv_layer]
 
-                    # Blender 5.0: select_edge は常に False。両方のUVが選択されている場合のみ EDGE 選択とみなす
-                    if l.uv_select_edge:
-                        ln = l.link_loop_next
-
+                    if utils.uv_edge_selected(l, uv_layer):
                         li = (l.face.index, list(l.face.loops).index(l))
                         if li not in seen:
                             loops.append(l)

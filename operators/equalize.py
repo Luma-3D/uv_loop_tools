@@ -3,7 +3,7 @@ import bpy
 import bmesh
 from mathutils import Vector
 from bpy.app.translations import pgettext as pgett
-from .. import utils, properties
+from .. import utils
 
 
 class UV_OT_loop_equalize(bpy.types.Operator):
@@ -103,11 +103,11 @@ class UV_OT_loop_equalize(bpy.types.Operator):
                     ln = l.link_loop_next
                     luvn = ln[uv_layer]
 
-                    # Blender 5.0 では select_edgeが機能しないため
-                    if l.uv_select_edge:
-                        ln = l.link_loop_next
-                        p = Vector(luv.uv); q = Vector(luvn.uv)
-                        a = uv_key_graph(p); b = uv_key_graph(q)
+                    if utils.uv_edge_selected(l, uv_layer):
+                        p = Vector(luv.uv)
+                        q = Vector(luvn.uv)
+                        a = uv_key_graph(p)
+                        b = uv_key_graph(q)
                         uv_to_loops.setdefault(a, []).append(l)
                         uv_to_loops.setdefault(b, []).append(ln)
                         graph.setdefault(a, set()).add(b)
@@ -284,11 +284,11 @@ class UV_OT_loop_equalize_straight_open(bpy.types.Operator):
                     ln = l.link_loop_next
                     luvn = ln[uv_layer]
 
-                    # Blender 5.0 では select_edgeが機能しないため
-                    if l.uv_select_edge:
-                        ln = l.link_loop_next
-                        p = Vector(luv.uv); q = Vector(luvn.uv)
-                        a = uv_key_graph(p); b = uv_key_graph(q)
+                    if utils.uv_edge_selected(l, uv_layer):
+                        p = Vector(luv.uv)
+                        q = Vector(luvn.uv)
+                        a = uv_key_graph(p)
+                        b = uv_key_graph(q)
                         uv_to_loops.setdefault(a, []).append(l)
                         uv_to_loops.setdefault(b, []).append(ln)
                         graph.setdefault(a, set()).add(b)
