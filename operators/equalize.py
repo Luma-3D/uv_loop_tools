@@ -100,15 +100,20 @@ class UV_OT_loop_equalize(bpy.types.Operator):
                 if f.hide: continue
                 for l in f.loops:
                     luv = l[uv_layer]
-                    if hasattr(luv, 'select_edge') and luv.select_edge:
+                    ln = l.link_loop_next
+                    luvn = ln[uv_layer]
+
+                    # Blender 5.0 では select_edgeが機能しないため
+                    if l.uv_select_edge:
                         ln = l.link_loop_next
-                        p = Vector(luv.uv); q = Vector(ln[uv_layer].uv)
+                        p = Vector(luv.uv); q = Vector(luvn.uv)
                         a = uv_key_graph(p); b = uv_key_graph(q)
                         uv_to_loops.setdefault(a, []).append(l)
                         uv_to_loops.setdefault(b, []).append(ln)
                         graph.setdefault(a, set()).add(b)
                         graph.setdefault(b, set()).add(a)
                         found = True
+
             if not found:
                 continue
 
@@ -276,9 +281,13 @@ class UV_OT_loop_equalize_straight_open(bpy.types.Operator):
                 if f.hide: continue
                 for l in f.loops:
                     luv = l[uv_layer]
-                    if hasattr(luv, 'select_edge') and luv.select_edge:
+                    ln = l.link_loop_next
+                    luvn = ln[uv_layer]
+
+                    # Blender 5.0 では select_edgeが機能しないため
+                    if l.uv_select_edge:
                         ln = l.link_loop_next
-                        p = Vector(luv.uv); q = Vector(ln[uv_layer].uv)
+                        p = Vector(luv.uv); q = Vector(luvn.uv)
                         a = uv_key_graph(p); b = uv_key_graph(q)
                         uv_to_loops.setdefault(a, []).append(l)
                         uv_to_loops.setdefault(b, []).append(ln)

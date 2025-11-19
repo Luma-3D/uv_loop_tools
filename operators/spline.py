@@ -481,15 +481,25 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                     continue
                 for l in f.loops:
                     luv = l[uv_layer]
-                    if hasattr(luv, 'select_edge') and luv.select_edge:
+                    ln = l.link_loop_next
+                    luvn = ln[uv_layer]
+
+                    # Blender 5.0: select_edge は常に False。両方のUVが選択されている場合のみ EDGE 選択とみなす
+                    if l.uv_select_edge:
                         ln = l.link_loop_next
-                        luvn = ln[uv_layer]
+
                         li = (l.face.index, list(l.face.loops).index(l))
                         if li not in seen:
-                            loops.append(l); orig_uvs.append(luv.uv.copy()); seen.add(li)
+                            loops.append(l)
+                            orig_uvs.append(luv.uv.copy())
+                            seen.add(li)
+
                         lni = (ln.face.index, list(ln.face.loops).index(ln))
                         if lni not in seen:
-                            loops.append(ln); orig_uvs.append(luvn.uv.copy()); seen.add(lni)
+                            loops.append(ln)
+                            orig_uvs.append(luvn.uv.copy())
+                            seen.add(lni)
+
                         found_edge = True
             if not found_edge:
                 continue

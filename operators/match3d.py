@@ -94,13 +94,18 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
                 if f.hide: continue
                 for l in f.loops:
                     luv = l[uv_layer]
-                    if hasattr(luv,'select_edge') and luv.select_edge:
+                    ln = l.link_loop_next
+                    luvn = ln[uv_layer]
+
+                    # Blender 5.0: select_edge は無効。両方のUVが選択されているかで判定する
+                    if l.uv_select_edge:
                         ln = l.link_loop_next
-                        p = Vector(luv.uv); q = Vector(ln[uv_layer].uv)
-                        add_map(p,l); add_map(q,ln)
+                        p = Vector(luv.uv); q = Vector(luvn.uv)
+                        add_map(p, l)
+                        add_map(q, ln)
                         a = uv_key_graph(p); b = uv_key_graph(q)
-                        graph.setdefault(a,set()).add(b)
-                        graph.setdefault(b,set()).add(a)
+                        graph.setdefault(a, set()).add(b)
+                        graph.setdefault(b, set()).add(a)
                         found = True
             if not found:
                 continue
@@ -362,14 +367,19 @@ class UV_OT_loop_match3d_ratio_straight_open(bpy.types.Operator):
                 if f.hide: continue
                 for l in f.loops:
                     luv = l[uv_layer]
-                    if hasattr(luv,'select_edge') and luv.select_edge:
+                    ln = l.link_loop_next
+                    luvn = ln[uv_layer]
+
+                    # Blender 5.0: select_edge は無効。両方のUVが選択されているかで判定する
+                    if l.uv_select_edge:
                         ln = l.link_loop_next
-                        p = Vector(luv.uv); q = Vector(ln[uv_layer].uv)
-                        add_map(p,l); add_map(q,ln)
+                        p = Vector(luv.uv); q = Vector(luvn.uv)
+                        add_map(p, l)
+                        add_map(q, ln)
                         a = uv_key_graph(p); b = uv_key_graph(q)
-                        graph.setdefault(a,set()).add(b)
-                        graph.setdefault(b,set()).add(a)
-                        found=True
+                        graph.setdefault(a, set()).add(b)
+                        graph.setdefault(b, set()).add(a)
+                        found = True
             if not found:
                 continue
 

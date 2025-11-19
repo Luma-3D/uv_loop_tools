@@ -407,9 +407,11 @@ def build_all_selected_uv_paths(bm, uv_layer):
             continue
         for l in f.loops:
             luv = l[uv_layer]
-            if hasattr(luv, 'select_edge') and luv.select_edge:
+            ln = l.link_loop_next
+            luvn = ln[uv_layer]
+            # --- Blender 5.0 対応：UV edge selection ---
+            if l.uv_select_edge:
                 ln = l.link_loop_next
-                luvn = ln[uv_layer]
                 a = Vector(luv.uv)
                 b = Vector(luvn.uv)
                 ka = _uv_key_graph(a)
@@ -418,6 +420,7 @@ def build_all_selected_uv_paths(bm, uv_layer):
                 nodes.setdefault(kb, b)
                 graph.setdefault(ka, set()).add(kb)
                 graph.setdefault(kb, set()).add(ka)
+    return graph, nodes
 
     if not graph:
         return []
