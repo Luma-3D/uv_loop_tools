@@ -91,14 +91,10 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
         return Vector((mu, mv))
 
     def _pref_int(self, prefs, name, default):
-        """Safely get an integer preference value; fallback to default if value is deferred or invalid."""
-        try:
-            if prefs is None:
-                return default
-            val = getattr(prefs, name, default)
-            return int(val)
-        except Exception:
+        """Safely get an integer preference value; fallback to default."""
+        if prefs is None:
             return default
+        return int(getattr(prefs, name, default))
 
     def _snapshot_ctrl(self):
         self._ctrl_backup = [[v.copy() for v in c.ctrl] for c in self.ms.curves]
@@ -150,39 +146,29 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
 
     def _apply_preview_all(self, context):
         bm_cache = {}
-        # normalize weld_tolerance to native float to avoid _PropertyDeferred in closures
-        try:
-            weld_tol = float(getattr(self, 'weld_tolerance', 1e-6))
-        except Exception:
-            weld_tol = 1e-6
+        # Robust access via as_keywords to avoid _PropertyDeferred
+        weld_tol = float(self.as_keywords().get('weld_tolerance', 1e-6))
+        
         for c in self.ms.curves:
             obj = getattr(c, 'obj', context.object)
             if obj not in bm_cache:
-                try:
-                    bm = bmesh.from_edit_mesh(obj.data)
-                    uv_layer = bm.loops.layers.uv.verify()
-                    bm_cache[obj] = (bm, uv_layer)
-                except Exception:
-                    bm_cache[obj] = (None, None)
+                bm = bmesh.from_edit_mesh(obj.data)
+                uv_layer = bm.loops.layers.uv.verify()
+                bm_cache[obj] = (bm, uv_layer)
+
             bm, uv_layer = bm_cache[obj]
             if bm is None or uv_layer is None:
                 continue
             if len(c.ctrl) < 2:
                 for (o, fidx, lidx), uv0 in zip(c.loops, c.orig_uvs):
-                    try:
-                        loop = bm.faces[fidx].loops[lidx]
-                        loop[uv_layer].uv = uv0
-                    except Exception:
-                        pass
+                    loop = bm.faces[fidx].loops[lidx]
+                    loop[uv_layer].uv = uv0
                 continue
             samples, _ = utils.sample_polyline(c.ctrl, resolution=self._resolution_fixed, curve_type=self._curve_type_fixed, closed=c.closed_locked)
             if len(samples) < 2:
                 for (o, fidx, lidx), uv0 in zip(c.loops, c.orig_uvs):
-                    try:
-                        loop = bm.faces[fidx].loops[lidx]
-                        loop[uv_layer].uv = uv0
-                    except Exception:
-                        pass
+                    loop = bm.faces[fidx].loops[lidx]
+                    loop[uv_layer].uv = uv0
                 continue
             seg_pairs = []; seg_lens = []
             n = len(samples)
@@ -209,56 +195,25 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                 i0, i1 = seg_pairs[-1]
                 return samples[i1]
             for (o, fidx, lidx), frac in zip(c.loops, c.orig_fractions):
-                try:
-                    loop = bm.faces[fidx].loops[lidx]
-                    new_uv = point_at_fraction(frac)
-                    key_func = lambda v, _tol=weld_tol: utils._uv_key(v, tol=_tol)
-                    welded = utils.gather_welded_uv_loops(loop, uv_layer, key_func)
-                    if not hasattr(self, '_welded_backup') or self._welded_backup is None:
-                        self._welded_backup = {}
-                    for l2 in welded:
-                        k = (obj, l2.face.index, list(l2.face.loops).index(l2))
-                        if k not in self._welded_backup:
-                            try:
-                                self._welded_backup[k] = l2[uv_layer].uv.copy()
-                            except Exception:
-                                pass
-                        l2[uv_layer].uv = new_uv
-                except Exception:
-                    pass
+                loop = bm.faces[fidx].loops[lidx]
+                new_uv = point_at_fraction(frac)
+                key_func = lambda v, _tol=weld_tol: utils._uv_key(v, tol=_tol)
+                welded = utils.gather_welded_uv_loops(loop, uv_layer, key_func)
+                if not hasattr(self, '_welded_backup') or self._welded_backup is None:
+                    self._welded_backup = {}
+                for l2 in welded:
+                    k = (obj, l2.face.index, list(l2.face.loops).index(l2))
+                    if k not in self._welded_backup:
+                        self._welded_backup[k] = l2[uv_layer].uv.copy()
+
+                    l2[uv_layer].uv = new_uv
         for obj, (bm, uv_layer) in bm_cache.items():
             if bm is None: continue
-            try:
-                bmesh.update_edit_mesh(obj.data, loop_triangles=False, destructive=False)
-            except Exception:
-                pass
+            bmesh.update_edit_mesh(obj.data, loop_triangles=False, destructive=False)
 
     @staticmethod
     def _get_prefs():
-        try:
-            addons = bpy.context.preferences.addons
-        except Exception:
-            return None
-
-        pkg = __package__ or ""
-        if pkg:
-            # direct package match
-            if pkg in addons:
-                addon = addons.get(pkg)
-                return addon.preferences if addon else None
-            # try top-level package
-            root = pkg.split('.', 1)[0]
-            if root in addons:
-                addon = addons.get(root)
-                return addon.preferences if addon else None
-
-        # fallback: find any addon key that contains 'uv_loop_tools'
-        for key in addons.keys():
-            if 'uv_loop_tools' in key:
-                addon = addons.get(key)
-                return addon.preferences if addon else None
-
-        return None
+        return utils.get_preferences()
 
     def _backend_is_opengl(self):
         be = bpy.context.preferences.system.gpu_backend
@@ -273,11 +228,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
         ny = dx / length * (thickness * 0.5)
         verts = [(x1 + nx, y1 + ny), (x1 - nx, y1 - ny), (x2 - nx, y2 - ny), (x2 + nx, y2 + ny)]
         batch = batch_for_shader(shader, 'TRI_FAN', {"pos": verts})
-        try:
-            shader.bind(); shader.uniform_float("color", color); batch.draw(shader)
-        except Exception:
-            # drawing may not be available in some contexts; ignore
-            pass
+        shader.bind(); shader.uniform_float("color", color); batch.draw(shader)
 
     def _draw_disc(self, cx, cy, radius_px, color, shader, segments=16):
         verts = [(cx, cy)]
@@ -285,10 +236,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
             a = (i / segments) * (math.pi * 2.0)
             verts.append((cx + math.cos(a) * radius_px, cy + math.sin(a) * radius_px))
         batch = batch_for_shader(shader, 'TRI_FAN', {"pos": verts})
-        try:
-            shader.bind(); shader.uniform_float("color", color); batch.draw(shader)
-        except Exception:
-            pass
+        shader.bind(); shader.uniform_float("color", color); batch.draw(shader)
 
     def draw_callback(self, context):
         if not hasattr(self, 'ms') or not self.ms.curves:
@@ -300,25 +248,23 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
         def uv_to_px(uv):
             return Vector(v2d.view_to_region(uv.x, uv.y, clip=False))
 
-        # shader creation may also fail in headless/test envs - guard it
-        try:
-            shader2d = gpu.shader.from_builtin('UNIFORM_COLOR')
-        except Exception:
-            shader2d = None
+        shader2d = gpu.shader.from_builtin('UNIFORM_COLOR')
 
         curve_color = prefs.curve_color if prefs else (0.15, 0.7, 1.0, 1.0)
-        curve_thickness = prefs.curve_thickness if prefs else 2.0
-        point_size = prefs.point_size if prefs else 8.0
+        
+        # Get UI scale for HiDPI support
+        ui_scale = context.preferences.system.ui_scale
+        
+        curve_thickness = (prefs.curve_thickness if prefs else 2.0) * ui_scale
+        point_size = (prefs.point_size if prefs else 8.0) * ui_scale
+        
         color_normal = prefs.point_color_normal if prefs else (0.8,0.8,0.8,1.0)
         color_sel = prefs.point_color_selected if prefs else (1.0,0.3,0.3,1.0)
         color_act = prefs.point_color_active if prefs else (1.0,1.0,0.0,1.0)
 
         if getattr(self, '_display_spline', True):
             if backend_is_gl:
-                try:
-                    gpu.state.line_width_set(max(1.0, curve_thickness))
-                except Exception:
-                    pass
+                gpu.state.line_width_set(max(1.0, curve_thickness))
             for c in self.ms.curves:
                 if len(c.ctrl) < 2: continue
                 samples, _ = utils.sample_polyline(c.ctrl, resolution=self._resolution_fixed, curve_type=self._curve_type_fixed, closed=c.closed_locked)
@@ -326,17 +272,10 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                 pts_px = [uv_to_px(p) for p in samples]
                 coords = [(p.x, p.y) for p in pts_px]
                 if backend_is_gl and shader2d is not None:
-                    try:
-                        gpu.state.line_width_set(max(1.0, curve_thickness))
-                    except Exception:
-                        pass
-                    try:
-                        batch = batch_for_shader(shader2d, 'LINE_STRIP', {"pos": coords})
-                        shader2d.bind(); shader2d.uniform_float("color", curve_color)
-                        batch.draw(shader2d)
-                    except Exception:
-                        # drawing might fail (headless), ignore
-                        pass
+                    gpu.state.line_width_set(max(1.0, curve_thickness))
+                    batch = batch_for_shader(shader2d, 'LINE_STRIP', {"pos": coords})
+                    shader2d.bind(); shader2d.uniform_float("color", curve_color)
+                    batch.draw(shader2d)
                 else:
                     for i in range(len(coords)-1):
                         x1,y1 = coords[i]; x2,y2 = coords[i+1]
@@ -349,22 +288,13 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
             x0, y0 = self._box_start
             x1, y1 = self._box_end
             rect = [(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]
-            try:
-                gpu.state.line_width_set(1.0)
-            except Exception:
-                pass
-            try:
-                gpu.state.blend_set('ALPHA')
-                gpu.state.depth_test_set('NONE')
-            except Exception:
-                pass
-            try:
-                batch = batch_for_shader(shader2d, 'LINE_STRIP', {"pos": rect})
-                shader2d.bind()
-                shader2d.uniform_float("color", (1.0, 1.0, 1.0, 0.8))
-                batch.draw(shader2d)
-            except Exception:
-                pass
+            gpu.state.line_width_set(1.0)
+            gpu.state.blend_set('ALPHA')
+            gpu.state.depth_test_set('NONE')
+            batch = batch_for_shader(shader2d, 'LINE_STRIP', {"pos": rect})
+            shader2d.bind()
+            shader2d.uniform_float("color", (1.0, 1.0, 1.0, 0.8))
+            batch.draw(shader2d)
 
         if getattr(self, '_display_points', True):
             for c in self.ms.curves:
@@ -374,83 +304,60 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                 coords_inactive = [(p.x, p.y) for i,p in enumerate(ctrl_px) if i not in c.sel and i != aidx]
                 if coords_inactive:
                     if backend_is_gl and shader2d is not None:
-                        try:
-                            gpu.state.point_size_set(max(1.0, point_size))
-                        except Exception:
-                            pass
-                        try:
-                            batch = batch_for_shader(shader2d, 'POINTS', {"pos": coords_inactive})
-                            shader2d.bind(); shader2d.uniform_float("color", color_normal)
-                            batch.draw(shader2d)
-                        except Exception:
-                            pass
+                        gpu.state.point_size_set(max(1.0, point_size))
+                        batch = batch_for_shader(shader2d, 'POINTS', {"pos": coords_inactive})
+                        shader2d.bind(); shader2d.uniform_float("color", color_normal)
+                        batch.draw(shader2d)
                     else:
                         for x,y in coords_inactive:
                             self._draw_disc(x, y, point_size*0.5, color_normal, shader2d, segments=18)
                 coords_sel = [(p.x, p.y) for i,p in enumerate(ctrl_px) if i in c.sel and i != aidx]
                 if coords_sel:
                     if backend_is_gl and shader2d is not None:
-                        try:
-                            gpu.state.point_size_set(max(1.0, point_size*1.4))
-                        except Exception:
-                            pass
-                        try:
-                            batch = batch_for_shader(shader2d, 'POINTS', {"pos": coords_sel})
-                            shader2d.bind(); shader2d.uniform_float("color", color_sel)
-                            batch.draw(shader2d)
-                        except Exception:
-                            pass
+                        gpu.state.point_size_set(max(1.0, point_size*1.4))
+                        batch = batch_for_shader(shader2d, 'POINTS', {"pos": coords_sel})
+                        shader2d.bind(); shader2d.uniform_float("color", color_sel)
+                        batch.draw(shader2d)
                     else:
                         for x,y in coords_sel:
                             self._draw_disc(x, y, point_size*0.7, color_sel, shader2d, segments=18)
                 if 0 <= aidx < len(ctrl_px):
                     px = ctrl_px[aidx]
                     if backend_is_gl and shader2d is not None:
-                        try:
-                            gpu.state.point_size_set(max(1.0, point_size*1.8))
-                        except Exception:
-                            pass
-                        try:
-                            batch = batch_for_shader(shader2d, 'POINTS', {"pos": [(px.x, px.y)]})
-                            shader2d.bind(); shader2d.uniform_float("color", color_act)
-                            batch.draw(shader2d)
-                        except Exception:
-                            pass
+                        gpu.state.point_size_set(max(1.0, point_size*1.8))
+                        batch = batch_for_shader(shader2d, 'POINTS', {"pos": [(px.x, px.y)]})
+                        shader2d.bind(); shader2d.uniform_float("color", color_act)
+                        batch.draw(shader2d)
                     else:
                         self._draw_disc(px.x, px.y, point_size*0.9, color_act, shader2d, segments=20)
 
-            try:
-                blf.size(0, 24)
+            blf.size(0, 24)
 
-                hud_lines = [
-                    iface_("[UV Spline] Curves: {count_curves}  Points(avg): {points}").format(
-                        count_curves=len(self.ms.curves),
-                        points=self.ms.global_points
-                    ),
-                    iface_("Esc/RMB: Exit | G/LMB(Drag): Move | H: Hide spline | Shift+LMB: Multiple selection"),
-                    iface_("Ctrl/Shift+Wheel: Change control points | Ctrl+LMB: Add or delete | Del: Delete | R: Reset deform"),
-                    iface_("(while moving)"),
-                    iface_("RMB: Move cancel | X/Y: axis lock")
-                ]
-                base_x = 14
-                base_y = 10
-                line_height = 28
-                for i, line in enumerate(hud_lines):
-                    y = base_y + (len(hud_lines) - 1 - i) * line_height
-                    blf.position(0, base_x, y, 0)
-                    blf.draw(0, line)
-            except Exception:
-                pass
+            hud_lines = [
+                iface_("[UV Spline] Curves: {count_curves}  Points(avg): {points}").format(
+                    count_curves=len(self.ms.curves),
+                    points=self.ms.global_points
+                ),
+                iface_("Esc/RMB: Exit | G/LMB(Drag): Move | H: Hide spline | Shift+LMB: Multiple selection"),
+                iface_("Ctrl/Shift+Wheel: Change control points | Ctrl+LMB: Add or delete | Del: Delete | R: Reset deform"),
+                iface_("(while moving)"),
+                iface_("RMB: Move cancel | X/Y: axis lock")
+            ]
+            base_x = 14
+            base_y = 10
+            line_height = 28
+            for i, line in enumerate(hud_lines):
+                y = base_y + (len(hud_lines) - 1 - i) * line_height
+                blf.position(0, base_x, y, 0)
+                blf.draw(0, line)
 
     def invoke(self, context, event):
-        if getattr(context.scene.tool_settings, "use_uv_select_sync", False):
-            self.report({'WARNING'}, pgett("Cannot run while UV sync selection is on. Please disable sync in the UV editor header."))
-            return {'CANCELLED'}
-        if context.area is None or context.area.type != 'IMAGE_EDITOR':
+        if not utils.poll_image_editor_mesh_edit(context):
             self.report({'WARNING'}, "Please run from the UV/Image Editor while editing a mesh.")
             return {'CANCELLED'}
-        if not context.object or context.object.type != 'MESH' or context.object.mode != 'EDIT':
-            self.report({'WARNING'}, "Active object must be a mesh in Edit Mode.")
+
+        if getattr(context.scene.tool_settings, "use_uv_select_sync", False):
+            self.report({'WARNING'}, pgett("Cannot run while UV sync selection is on. Please disable sync in the UV editor header."))
             return {'CANCELLED'}
 
         self.area = context.area
@@ -537,7 +444,8 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
             return {'CANCELLED'}
 
         wm = bpy.context.window_manager
-        init_pts = int(getattr(wm, 'uv_spline_auto_ctrl_count', self.auto_ctrl_count))
+        # Use WindowManager property directly
+        init_pts = getattr(wm, 'uv_spline_auto_ctrl_count', self.auto_ctrl_count)
         global_min = 3 if any_closed else 2
         self.ms.global_points = max(global_min, init_pts)
 
@@ -628,25 +536,18 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
 
     def finish(self, context, cancel=False):
         if cancel:
-            wb = getattr(self, '_welded_backup', None)
             if wb:
                 obj_cache = {}
                 for (obj, fidx, lidx), uv in wb.items():
-                    try:
-                        if obj not in obj_cache:
-                            bm = bmesh.from_edit_mesh(obj.data)
-                            uv_layer = bm.loops.layers.uv.verify()
-                            obj_cache[obj] = (bm, uv_layer)
-                        bm, uv_layer = obj_cache[obj]
-                        loop = bm.faces[fidx].loops[lidx]
-                        loop[uv_layer].uv = uv
-                    except Exception:
-                        pass
+                    if obj not in obj_cache:
+                        bm = bmesh.from_edit_mesh(obj.data)
+                        uv_layer = bm.loops.layers.uv.verify()
+                        obj_cache[obj] = (bm, uv_layer)
+                    bm, uv_layer = obj_cache[obj]
+                    loop = bm.faces[fidx].loops[lidx]
+                    loop[uv_layer].uv = uv
                 for obj, (bm, _) in obj_cache.items():
-                    try:
-                        bmesh.update_edit_mesh(obj.data, loop_triangles=False, destructive=False)
-                    except Exception:
-                        pass
+                    bmesh.update_edit_mesh(obj.data, loop_triangles=False, destructive=False)
                 self._welded_backup = {}
             bm_cache = {}
             for c in self.ms.curves:
@@ -662,11 +563,8 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                 if bm is None or uv_layer is None:
                     continue
                 for (o, fidx, lidx), uv0 in zip(c.loops, c.orig_uvs):
-                    try:
-                        loop = bm.faces[fidx].loops[lidx]
-                        loop[uv_layer].uv = uv0
-                    except Exception:
-                        pass
+                    loop = bm.faces[fidx].loops[lidx]
+                    loop[uv_layer].uv = uv0
 
         if not cancel:
             counts = [len(c.ctrl) for c in self.ms.curves]
@@ -679,10 +577,11 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
                         save = len(self.ms.curves[ac].ctrl)
                     else:
                         save = counts[0]
-                try:
+                    save = counts[0]
+                
+                # Update property if it exists
+                if hasattr(bpy.context.window_manager, "uv_spline_auto_ctrl_count"):
                     bpy.context.window_manager.uv_spline_auto_ctrl_count = save
-                except Exception:
-                    pass
 
         if self._handle:
             bpy.types.SpaceImageEditor.draw_handler_remove(self._handle, 'WINDOW')
@@ -695,15 +594,10 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
         if not objs:
             objs = {context.object}
         for obj in objs:
-            try:
-                bmesh.update_edit_mesh(obj.data, loop_triangles=False, destructive=False)
-            except Exception:
-                pass
-        try:
-            if self.area: self.area.tag_redraw()
-            if self.region: self.region.tag_redraw()
-        except Exception:
-            pass
+            bmesh.update_edit_mesh(obj.data, loop_triangles=False, destructive=False)
+
+        if self.area: self.area.tag_redraw()
+        if self.region: self.region.tag_redraw()
         self._axis_constraint = None
 
     def _clear_selection(self):
@@ -742,10 +636,7 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
         if hasattr(self, 'mouse_uv') and self.mouse_uv is not None:
             self._drag_start_uv = self.mouse_uv.copy()
         else:
-            try:
-                self._drag_start_uv = self._region_to_uv(event.mouse_region_x, event.mouse_region_y)
-            except Exception:
-                self._drag_start_uv = Vector((0.0,0.0))
+            self._drag_start_uv = self._region_to_uv(event.mouse_region_x, event.mouse_region_y)
         self._drag_data = self._selected_points_snapshot()
         if not self._drag_data:
             cidx, pidx = self.ms.find_global_nearest_control(self._drag_start_uv, self.v2d, self.region)

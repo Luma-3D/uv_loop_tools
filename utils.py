@@ -500,81 +500,53 @@ def build_all_selected_uv_paths(bm, uv_layer):
 
     return out_paths
 
-# 単一化された WM プロパティ確保関数（重複を除去）
-def ensure_wm_props():
-    wm = bpy.context.window_manager
-    if not hasattr(wm, "uv_spline_auto_ctrl_count"):
-        wm.__class__.uv_spline_auto_ctrl_count = bpy.props.IntProperty(
-            name="制御点数", default=4, min=2, max=30
-        )
+# --- Helper functions ---
 
-# モーダルオペレータの invoke を差し替えるための共通実装
-_orig_invoke = None
-def _invoke_with_defaults(self, context, event):
-    """invoke のラッパ — WM プロパティを初期化してから元の invoke を呼ぶ"""
-    ensure_wm_props()
+def get_preferences(context=None):
+    """
+    アドオン設定を取得するヘルパー。
+    コンテキストが渡されない場合は bpy.context を使用する。
+    """
+    if context is None:
+        context = bpy.context
+        
+    # プリファレンスパス経由で取得（パッケージ名依存を吸収）
+    # アドオンモジュール名がどうなっているか動的に判定
     try:
-        # uv_spline_auto_ctrl_count があればオペレータのデフォルトに設定
-        self.auto_ctrl_count = context.window_manager.uv_spline_auto_ctrl_count
+        # __package__ は呼び出し元によって変わる可能性があるため、
+        # ここでは固定文字列としての検索も併用するが、基本は context.preferences.addons から引く
+        pkg = __package__ 
+        if not pkg:
+            # utils.py が __package__ を持たない場合（まずないが）、推測する
+            pkg = "uv_loop_tools" 
+        
+        # トップレベルパッケージ名を取得 (e.g. 'uv_loop_tools.utils' -> 'uv_loop_tools')
+        root_pkg = pkg.split('.')[0]
+        
+        prefs = context.preferences
+        if root_pkg in prefs.addons:
+            return prefs.addons[root_pkg].preferences
+            
+        # フォルダ名変更などでパッケージ名が変わっている場合のフォールバック
+        for key in prefs.addons.keys():
+            if "uv_loop_tools" in key:
+                return prefs.addons[key].preferences
+                
     except Exception:
+        # 取得失敗時は None を返す（呼び出し側でハンドリング、またはデフォルト値使用）
         pass
-    # _orig_invoke は register() 時に設定される想定
-    if _orig_invoke is not None:
-        return _orig_invoke(self, context, event)
-    # フォールバック: クラスの元々の invoke を呼ぶ (もし存在すれば)
-    return type(self).invoke(self, context, event)
+    
+    return None
 
-def _monkeypatch_modal_invoke():
-    """operators_spline.UV_OT_spline_adjust_modal.invoke を安全に差し替える（存在すれば）"""
-    global _orig_invoke
-    try:
-        from .operators.spline import UV_OT_spline_adjust_modal
-    except Exception:
-        UV_OT_spline_adjust_modal = None
-
-    if UV_OT_spline_adjust_modal is None:
-        _orig_invoke = None
-        return
-
-    # 保存してから差し替え
-    _orig_invoke = getattr(UV_OT_spline_adjust_modal, "invoke", None)
-    UV_OT_spline_adjust_modal.invoke = _invoke_with_defaults
-
-def _restore_modal_invoke():
-    """差し替えを元に戻す"""
-    global _orig_invoke
-    try:
-        from .operators.spline import UV_OT_spline_adjust_modal
-    except Exception:
-        UV_OT_spline_adjust_modal = None
-
-    if UV_OT_spline_adjust_modal is None:
-        _orig_invoke = None
-        return
-
-    if _orig_invoke is not None:
-        UV_OT_spline_adjust_modal.invoke = _orig_invoke
-    else:
-        # 元がなければ安全なデフォルトにしておく（オリジナルの実装を参照）
-        try:
-            delattr(UV_OT_spline_adjust_modal, "invoke")
-        except Exception:
-            pass
-    _orig_invoke = None
-
-# utils モジュール自体は「ユーティリティ集」であり、クラス登録は行わない方針にする
-def register():
+def poll_image_editor_mesh_edit(context):
     """
-    注意：utils.register() は基本的に軽い初期化のみ行います。
-    - モーダルオペレータの invoke 差し替え（operators_spline に実装があれば行う）
-    - 必要な WM プロパティの確保
+    共通ポーリング関数:
+    - 画像エディタ領域であること
+    - アクティブオブジェクトがメッシュであること
+    - 編集モードであること
     """
-    ensure_wm_props()
-    _monkeypatch_modal_invoke()
+    if not context.area or context.area.type != 'IMAGE_EDITOR':
+        return False
+    obj = context.active_object
+    return bool(obj and obj.type == 'MESH' and obj.mode == 'EDIT')
 
-def unregister():
-    # 差し替えを元に戻す
-    _restore_modal_invoke()
-    # WM プロパティはアンレジストリで消すことは避け、Blender 側で持たせたままでも良い
-    # （削除したい場合はここで delattr を行ってください）
-    return

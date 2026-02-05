@@ -34,26 +34,10 @@ class UV_OT_loop_equalize(bpy.types.Operator):
     auto_max_iter = bpy.props.IntProperty(name="Auto max iterations", min=1, max=25, default=12)
     converge_epsilon = bpy.props.FloatProperty(name="Converge epsilon", min=1e-9, max=1e-2, default=1e-6)
 
-    def _safe_int(self, name, default=5):
-        try:
-            return int(getattr(self, name))
-        except Exception:
-            return int(default)
-
-    def _safe_float(self, name, default=1e-6):
-        try:
-            return float(getattr(self, name))
-        except Exception:
-            return float(default)
-
-    @classmethod
-    def poll(cls, context):
-        obj = context.active_object
-        return obj and obj.type == 'MESH' and obj.mode == 'EDIT'
-
     def execute(self, context):
-        weld_tolerance = self._safe_float('weld_tolerance', 1e-6)
-        converge_epsilon = self._safe_float('converge_epsilon', 1e-6)
+        kw = self.as_keywords()
+        weld_tolerance = float(kw.get('weld_tolerance', 1e-6))
+        converge_epsilon = float(kw.get('converge_epsilon', 1e-6))
 
         ts = getattr(context, 'tool_settings', None)
         if ts and getattr(ts, 'use_uv_select_sync', False):
@@ -86,11 +70,7 @@ class UV_OT_loop_equalize(bpy.types.Operator):
 
         for obj in objs:
             me = obj.data
-            try:
-                bm = bmesh.from_edit_mesh(me)
-            except Exception:
-                skipped += 1
-                continue
+            bm = bmesh.from_edit_mesh(me)
             uv_layer = bm.loops.layers.uv.verify()
 
             graph = {}
@@ -189,10 +169,7 @@ class UV_OT_loop_equalize(bpy.types.Operator):
                     else:
                         count_open += 1
 
-            try:
-                bmesh.update_edit_mesh(me, loop_triangles=False, destructive=False)
-            except Exception:
-                pass
+            bmesh.update_edit_mesh(me, loop_triangles=False, destructive=False)
 
         if processed == 0:
             if skipped > 0:
@@ -224,19 +201,12 @@ class UV_OT_loop_equalize_straight_open(bpy.types.Operator):
         min=1e-8, max=1e-2, default=1e-6, subtype='FACTOR'
     )
 
-    def _safe_float(self, name, default=1e-6):
-        try:
-            return float(getattr(self, name))
-        except Exception:
-            return float(default)
-
     @classmethod
     def poll(cls, context):
-        obj = context.active_object
-        return obj and obj.type == 'MESH' and obj.mode == 'EDIT'
+        return utils.poll_image_editor_mesh_edit(context)
 
     def execute(self, context):
-        weld_tolerance = self._safe_float('weld_tolerance', 1e-6)
+        weld_tolerance = float(self.as_keywords().get('weld_tolerance', 1e-6))
 
         ts = getattr(context, 'tool_settings', None)
         if ts and getattr(ts, 'use_uv_select_sync', False):
@@ -259,11 +229,7 @@ class UV_OT_loop_equalize_straight_open(bpy.types.Operator):
 
         for obj in objs:
             me = obj.data
-            try:
-                bm = bmesh.from_edit_mesh(me)
-            except Exception:
-                skipped += 1
-                continue
+            bm = bmesh.from_edit_mesh(me)
             uv_layer = bm.loops.layers.uv.verify()
 
             graph_tol = min(weld_tolerance * 0.25, 5e-7)
@@ -360,10 +326,7 @@ class UV_OT_loop_equalize_straight_open(bpy.types.Operator):
                     processed += 1
                     count_open += 1
 
-            try:
-                bmesh.update_edit_mesh(me, loop_triangles=False, destructive=False)
-            except Exception:
-                pass
+            bmesh.update_edit_mesh(me, loop_triangles=False, destructive=False)
 
         if processed == 0:
             if skipped > 0:

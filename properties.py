@@ -36,11 +36,20 @@ def register():
     if not hasattr(bpy.types.WindowManager, "uvlseq_settings"):
         bpy.types.WindowManager.uvlseq_settings = bpy.props.PointerProperty(type=UVLSEQ_Settings)
 
+    # Move uv_spline_auto_ctrl_count registration here (was monkey-patched in utils)
+    if not hasattr(bpy.types.WindowManager, "uv_spline_auto_ctrl_count"):
+        bpy.types.WindowManager.uv_spline_auto_ctrl_count = bpy.props.IntProperty(
+            name="Control Points", default=4, min=2, max=30
+        )
+
 
 def unregister():
     # remove pointer
     if hasattr(bpy.types.WindowManager, "uvlseq_settings"):
         del bpy.types.WindowManager.uvlseq_settings
+
+    if hasattr(bpy.types.WindowManager, "uv_spline_auto_ctrl_count"):
+        del bpy.types.WindowManager.uv_spline_auto_ctrl_count
 
     # unregister classes in reverse order
     for cls in reversed(classes):

@@ -26,8 +26,7 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        obj = context.active_object
-        return obj and obj.type == 'MESH' and obj.mode == 'EDIT'
+        return utils.poll_image_editor_mesh_edit(context)
 
     def invoke(self, context, event):
         return self.execute(context)
@@ -41,11 +40,7 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
         box0.prop(self, "weld_tolerance")
 
     def execute(self, context):
-        # normalize props to avoid _PropertyDeferred proxies
-        try:
-            weld_tolerance = float(self.weld_tolerance)
-        except Exception:
-            weld_tolerance = 1e-6
+        weld_tolerance = float(self.as_keywords().get('weld_tolerance', 1e-6))
 
         ts = getattr(context, "tool_settings", None)
         if ts and getattr(ts, "use_uv_select_sync", False):
@@ -68,11 +63,7 @@ class UV_OT_loop_match3d_ratio(bpy.types.Operator):
 
         for obj in objs:
             me = obj.data
-            try:
-                bm = bmesh.from_edit_mesh(me)
-            except Exception:
-                skipped += 1
-                continue
+            bm = bmesh.from_edit_mesh(me)
             uv_layer = bm.loops.layers.uv.verify()
 
             graph_tol = min(weld_tolerance*0.25, 5e-7)
