@@ -33,31 +33,15 @@ def register():
         bpy.utils.register_class(cls)
 
     # create WindowManager pointer property so panels/operators can access wm.uvlseq_settings
-    try:
-        if not hasattr(bpy.types.WindowManager, "uvlseq_settings"):
-            bpy.types.WindowManager.uvlseq_settings = bpy.props.PointerProperty(type=UVLSEQ_Settings)
-    except Exception:
-        # non-fatal — if creation fails, panels guard for missing attribute
-        pass
+    if not hasattr(bpy.types.WindowManager, "uvlseq_settings"):
+        bpy.types.WindowManager.uvlseq_settings = bpy.props.PointerProperty(type=UVLSEQ_Settings)
+
 
 def unregister():
-    # remove pointer (best-effort)
-    try:
-        if hasattr(bpy.types.WindowManager, "uvlseq_settings"):
-            try:
-                delattr(bpy.types.WindowManager, "uvlseq_settings")
-            except Exception:
-                # fallback: set to None if deletion not allowed
-                try:
-                    bpy.types.WindowManager.uvlseq_settings = None
-                except Exception:
-                    pass
-    except Exception:
-        pass
+    # remove pointer
+    if hasattr(bpy.types.WindowManager, "uvlseq_settings"):
+        del bpy.types.WindowManager.uvlseq_settings
 
     # unregister classes in reverse order
     for cls in reversed(classes):
-        try:
-            bpy.utils.unregister_class(cls)
-        except Exception:
-            pass
+        bpy.utils.unregister_class(cls)

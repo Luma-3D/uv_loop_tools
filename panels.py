@@ -282,43 +282,20 @@ classes = (
 )
 
 def register():
-    # ensure the WindowManager setting exists if the settings class is available
-    try:
-        # register panel classes
-        for cls in classes:
-            bpy.utils.register_class(cls)
-    except Exception:
-        # if registration fails, try to unregister any that did register (best-effort)
-        for cls in reversed(classes):
-            try:
-                bpy.utils.unregister_class(cls)
-            except Exception:
-                pass
-        raise
+    # register panel classes
+    for cls in classes:
+        bpy.utils.register_class(cls)
 
     # create WindowManager pointer if the properties class is available
-    try:
-        if hasattr(properties, "UVLSEQ_Settings"):
-            if not hasattr(bpy.types.WindowManager, "uvlseq_settings"):
-                bpy.types.WindowManager.uvlseq_settings = bpy.props.PointerProperty(type=properties.UVLSEQ_Settings)
-    except Exception:
-        # non-fatal
-        pass
+    if hasattr(properties, "UVLSEQ_Settings"):
+        if not hasattr(bpy.types.WindowManager, "uvlseq_settings"):
+            bpy.types.WindowManager.uvlseq_settings = bpy.props.PointerProperty(type=properties.UVLSEQ_Settings)
+
 
 def unregister():
     # remove pointer if we added it
-    try:
-        if hasattr(bpy.types.WindowManager, "uvlseq_settings"):
-            try:
-                delattr(bpy.types.WindowManager, "uvlseq_settings")
-            except Exception:
-                # safe to ignore if it wasn't ours
-                pass
-    except Exception:
-        pass
+    if hasattr(bpy.types.WindowManager, "uvlseq_settings"):
+        del bpy.types.WindowManager.uvlseq_settings
 
     for cls in reversed(classes):
-        try:
-            bpy.utils.unregister_class(cls)
-        except Exception:
-            pass
+        bpy.utils.unregister_class(cls)

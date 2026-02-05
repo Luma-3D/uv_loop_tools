@@ -17,28 +17,17 @@ def _iter_submodules():
         if fqname in sys.modules:
             yield sys.modules[fqname]
         else:
-            try:
-                yield importlib.import_module(fqname)
-            except Exception:
-                # import failed; skip - registration will be best-effort
-                continue
+            yield importlib.import_module(fqname)
 
 def register():
     """Register all operator submodules (import happens here)."""
     for mod in _iter_submodules():
         if hasattr(mod, "register"):
-            try:
-                mod.register()
-            except Exception:
-                # best-effort: continue registering others
-                continue
+            mod.register()
 
 def unregister():
     """Unregister submodules in reverse order."""
     mods = list(_iter_submodules())
     for mod in reversed(mods):
         if hasattr(mod, "unregister"):
-            try:
-                mod.unregister()
-            except Exception:
-                continue
+            mod.unregister()
