@@ -10,6 +10,23 @@ class UVSplineAdjusterPreferences(bpy.types.AddonPreferences):
     curve_thickness: bpy.props.FloatProperty(
         name="Curve Thickness", default=2.0, min=0.5, max=20.0
     )
+    def update_display_scale(self, context):
+        scale = float(self.display_scale)
+        # Base values (FHD standard): thickness=2.0, point_size=6.0
+        self.curve_thickness = 2.0 * scale
+        self.point_size = 6.0 * scale
+
+    display_scale: bpy.props.EnumProperty(
+        name="Display Scale",
+        description="Scale factor for drawing spline and points (useful for HiDPI/4K)",
+        items=[
+            ('1.0', "FHD (100%)", "Standard scale"),
+            ('1.5', "WQHD (150%)", "1.5x scale"),
+            ('2.0', "UHD (200%)", "2x scale for 4K"),
+        ],
+        default='1.0',
+        update=update_display_scale
+    )
     insert_pick_threshold_px: bpy.props.IntProperty(
         name="Insert Pick Threshold (px)", default=6, min=1, max=64
     )
@@ -34,6 +51,10 @@ class UVSplineAdjusterPreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
+        box = layout.box()
+        box.label(text='Display')
+        box.prop(self, "display_scale")
+        
         box = layout.box()
         box.label(text='Curve')
         box.prop(self, 'curve_color', text='Curve Color')

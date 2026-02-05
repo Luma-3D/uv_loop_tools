@@ -251,12 +251,8 @@ class UV_OT_spline_adjust_modal(bpy.types.Operator):
         shader2d = gpu.shader.from_builtin('UNIFORM_COLOR')
 
         curve_color = prefs.curve_color if prefs else (0.15, 0.7, 1.0, 1.0)
-        
-        # Get UI scale for HiDPI support
-        ui_scale = context.preferences.system.ui_scale
-        
-        curve_thickness = (prefs.curve_thickness if prefs else 2.0) * ui_scale
-        point_size = (prefs.point_size if prefs else 8.0) * ui_scale
+        curve_thickness = prefs.curve_thickness if prefs else 2.0
+        point_size = prefs.point_size if prefs else 8.0
         
         color_normal = prefs.point_color_normal if prefs else (0.8,0.8,0.8,1.0)
         color_sel = prefs.point_color_selected if prefs else (1.0,0.3,0.3,1.0)
